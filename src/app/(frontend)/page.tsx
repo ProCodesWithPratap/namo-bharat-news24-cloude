@@ -7,60 +7,62 @@ import {
   getVideos,
   getWebStories,
 } from "@/lib/api";
-import { NAV_CATEGORIES, SITE_NAME, SITE_DESCRIPTION } from "@/lib/utils";
+import { mockArticles, getMockCategoryFeed } from "@/lib/mock-data";
+import { NAV_CATEGORIES, SITE_DESCRIPTION } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: `नमो: भारत न्यूज़ 24 - ताजा हिंदी खबरें, ब्रेकिंग न्यूज़`,
+  title: "नमो: भारत न्यूज़ 24 - ताजा हिंदी खबरें, ब्रेकिंग न्यूज़",
   description: SITE_DESCRIPTION,
 };
 
 export default async function Home() {
-  let featured = { docs: [] as any[] };
-  let latest = { docs: [] as any[] };
-  let videos = { docs: [] as any[] };
-  let webStories = { docs: [] as any[] };
+  let featuredDocs: any[] = [];
+  let latestDocs: any[] = [];
+  let videoDocs: any[] = [];
+  let webStoryDocs: any[] = [];
 
   try {
-    [featured, latest, videos, webStories] = await Promise.all([
+    const [featured, latest, videos, webStories] = await Promise.all([
       getFeaturedArticles(8),
       getLatestArticles(24),
       getVideos(8),
       getWebStories(8),
     ]);
+    featuredDocs = featured.docs;
+    latestDocs = latest.docs;
+    videoDocs = videos.docs;
+    webStoryDocs = webStories.docs;
   } catch {
-    featured = { docs: [] };
-    latest = { docs: [] };
-    videos = { docs: [] };
-    webStories = { docs: [] };
+    // Handled with fallback data below.
   }
 
-  // Fetch per-category feeds in parallel
+  const hasApiData = featuredDocs.length > 0 || latestDocs.length > 0;
+  const featuredArticles = featuredDocs.length ? featuredDocs : mockArticles.slice(0, 8);
+  const latestArticles = latestDocs.length ? latestDocs : mockArticles;
+
   const categoryFeeds: Record<string, any[]> = {};
-  try {
-    await Promise.all(
-      NAV_CATEGORIES.slice(0, 8).map(async (cat) => {
-        const result = await getCategoryArticles(cat.slug, 4);
-        categoryFeeds[cat.slug] = result.docs;
-      })
-    );
-  } catch {
-    NAV_CATEGORIES.slice(0, 8).forEach((cat) => {
-      categoryFeeds[cat.slug] = [];
-    });
-  }
+  await Promise.all(
+    NAV_CATEGORIES.slice(0, 8).map(async (cat) => {
+      if (hasApiData) {
+        const result = await getCategoryArticles(cat.slug, 4).catch(() => ({ docs: [] }));
+        categoryFeeds[cat.slug] = result.docs.length ? result.docs : getMockCategoryFeed(cat.slug);
+        return;
+      }
+      categoryFeeds[cat.slug] = getMockCategoryFeed(cat.slug);
+    })
+  );
 
   return (
     <HomePage
-      featuredArticles={featured.docs}
-      latestArticles={latest.docs}
+      featuredArticles={featuredArticles}
+      latestArticles={latestArticles}
       categoryFeeds={categoryFeeds}
-      videos={videos.docs}
-      webStories={webStories.docs}
-      trendingArticles={latest.docs.slice(0, 10)}
+      videos={videoDocs}
+      webStories={webStoryDocs}
+      trendingArticles={latestArticles.slice(0, 10)}
     />
   );
 }
