@@ -1,0 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #C8102E;
+  --primary-dark: #A50D26;
+  --accent: #FF6B00;
+  --dark: #111111;
+  --surface: #FFFFFF;
+  --card: #F7F7F7;
+  --border: #E5E5E5;
+  --muted: #6B7280;
+  --text: #1A1A1A;
+  --ticker-bg: #C8102E;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  background: #FFFFFF;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hindi text class */
+.font-hindi {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+}
+
+/* Breaking ticker */
+.ticker-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ticker-content {
+  display: inline-block;
+  animation: ticker 40s linear infinite;
+}
+.ticker-content:hover { animation-play-state: paused; }
+
+@keyframes ticker {
+  0%   { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Article body typography */
+.article-body {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 1.125rem;
+  line-height: 1.85;
+  color: #1a1a1a;
+}
+.article-body h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 2rem 0 1rem;
+  color: #111;
+}
+.article-body h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.75rem;
+}
+.article-body p { margin-bottom: 1.25rem; }
+.article-body a { color: var(--primary); text-decoration: underline; }
+.article-body blockquote {
+  border-left: 4px solid var(--primary);
+  margin: 1.5rem 0;
+  padding: 0.5rem 1.25rem;
+  background: #fff5f5;
+  font-style: italic;
+  color: #333;
+}
+.article-body ul, .article-body ol {
+  margin: 1rem 0 1rem 1.5rem;
+}
+.article-body ul li, .article-body ol li { margin-bottom: 0.5rem; }
+
+/* Card hover effect */
+.news-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.news-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+/* Sticky header */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Category badge */
+.cat-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--primary);
+  color: white;
+  border-radius: 2px;
+}
+
+/* Breaking pulse */
+.breaking-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  animation: pulse2 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse2 {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #999; }
+
+/* Ad container */
+.ad-slot {
+  background: #f9f9f9;
+  border: 1px dashed #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Live badge */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #C8102E;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+/* Lazy image fade */
+img { transition: opacity 0.3s ease; }
+img[loading="lazy"] { opacity: 0; }
+img.loaded { opacity: 1; }
+
+/* Focus styles */
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

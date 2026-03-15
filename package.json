@@ -1,0 +1,43 @@
+{
+  "name": "news-portal",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "payload": "payload"
+  },
+  "dependencies": {
+    "@payloadcms/db-mongodb": "^3.0.0",
+    "@payloadcms/next": "^3.0.0",
+    "@payloadcms/richtext-lexical": "^3.0.0",
+    "@payloadcms/storage-vercel-blob": "^3.0.0",
+    "next": "15.0.0",
+    "payload": "^3.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sharp": "^0.33.5",
+    "graphql": "^16.9.0",
+    "@vercel/blob": "^0.24.1",
+    "date-fns": "^3.6.0",
+    "react-icons": "^5.3.0",
+    "next-seo": "^6.6.0",
+    "next-sitemap": "^4.2.3",
+    "sentry": "^8.0.0",
+    "@sentry/nextjs": "^8.34.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.15",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5"
+  }
+}
