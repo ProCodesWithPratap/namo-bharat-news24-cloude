@@ -5,10 +5,11 @@ import { getLiveBlogBySlug, getImageUrl, timeAgo } from "@/lib/api";
 import { SITE_NAME } from "@/lib/utils";
 
 export const revalidate = 30;
-interface Props { params: { slug: string } }
+type Props = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const blog = await getLiveBlogBySlug(params.slug);
+  const { slug } = await params;
+  const blog = await getLiveBlogBySlug(slug);
   if (!blog) return { title: "Not Found" };
   return {
     title: `LIVE: ${blog.titleHindi || blog.title} | ${SITE_NAME}`,
@@ -17,7 +18,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function LiveBlogPage({ params }: Props) {
-  const blog = await getLiveBlogBySlug(params.slug);
+  const { slug } = await params;
+  const blog = await getLiveBlogBySlug(slug);
   if (!blog) notFound();
 
   const entries: any[] = [...(blog.entries || [])].sort(

@@ -7,10 +7,11 @@ import { SITE_NAME } from "@/lib/utils";
 
 export const revalidate = 60;
 
-interface Props { params: { slug: string } }
+type Props = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const author = await getAuthorBySlug(params.slug);
+  const { slug } = await params;
+  const author = await getAuthorBySlug(slug);
   if (!author) return { title: "Not Found" };
   return {
     title: `${author.name} | ${SITE_NAME}`,
@@ -19,7 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function AuthorPage({ params }: Props) {
-  const author = await getAuthorBySlug(params.slug);
+  const { slug } = await params;
+  const author = await getAuthorBySlug(slug);
   if (!author) notFound();
 
   const articles = await getArticles({ limit: 12 }).catch(() => ({ docs: [] }));
