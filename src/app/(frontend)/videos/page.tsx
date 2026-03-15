@@ -3,6 +3,7 @@ import { getVideos } from "@/lib/api";
 import { SITE_NAME } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
+export const dynamic = "force-dynamic";
 
 export const revalidate = 60;
 

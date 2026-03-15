@@ -4,14 +4,14 @@ import { getCategoryBySlug, getCategoryArticles, getCategories } from "@/lib/api
 import NewsCard from "@/components/ui/NewsCard";
 import AdSlot from "@/components/ui/AdSlot";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
+export const dynamic = "force-dynamic";
 
 export const revalidate = 60;
 
 type Props = { params: Promise<{ category: string }>; searchParams: Promise<{ page?: string }> }
 
 export async function generateStaticParams() {
-  const cats = await getCategories({ showInNav: true, limit: 50 });
-  return cats.docs.map((c: any) => ({ category: c.slug }));
+  return [];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

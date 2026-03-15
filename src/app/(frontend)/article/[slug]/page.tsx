@@ -6,6 +6,7 @@ import { getArticleBySlug, getRelatedArticles, getImageUrl, formatDate, timeAgo 
 import NewsCard from "@/components/ui/NewsCard";
 import AdSlot from "@/components/ui/AdSlot";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
+export const dynamic = "force-dynamic";
 
 export const revalidate = 30;
 type Props = { params: Promise<{ slug: string }> }

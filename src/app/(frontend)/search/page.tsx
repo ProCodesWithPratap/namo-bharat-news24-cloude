@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { searchArticles } from "@/lib/api";
 import NewsCard from "@/components/ui/NewsCard";
 import { SITE_NAME } from "@/lib/utils";
+export const dynamic = "force-dynamic";
 
 export const revalidate = 0;
 
