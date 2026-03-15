@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { SITE_NAME } from "@/lib/utils";
 
 export const revalidate = 60;
-interface Props { params: { slug: string } }
+type Props = { params: Promise<{ slug: string }> }
 
 // Since we don't have a direct getVideoBySlug, quick fetch
 async function getVideoBySlug(slug: string) {
@@ -15,7 +15,8 @@ async function getVideoBySlug(slug: string) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const v = await getVideoBySlug(params.slug);
+  const { slug } = await params;
+  const v = await getVideoBySlug(slug);
   if (!v) return { title: "Not Found" };
   return { title: `${v.titleHindi || v.title} | ${SITE_NAME}` };
 }
@@ -26,7 +27,8 @@ function getYouTubeId(url: string): string | null {
 }
 
 export default async function VideoPage({ params }: Props) {
-  const video = await getVideoBySlug(params.slug);
+  const { slug } = await params;
+  const video = await getVideoBySlug(slug);
   if (!video) notFound();
 
   const ytId = getYouTubeId(video.embedUrl || "");

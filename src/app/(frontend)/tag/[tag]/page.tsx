@@ -6,31 +6,33 @@ import { SITE_NAME } from "@/lib/utils";
 
 export const revalidate = 60;
 
-interface Props { params: { tag: string } }
+type Props = { params: Promise<{ tag: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const tag = await getTagBySlug(params.tag);
-  if (!tag) return { title: "Not Found" };
+  const { tag } = await params;
+  const tagData = await getTagBySlug(tag);
+  if (!tagData) return { title: "Not Found" };
   return {
-    title: `${tag.nameHindi || tag.name} | ${SITE_NAME}`,
-    description: tag.description || `${tag.nameHindi || tag.name} से जुड़ी ताजा खबरें`,
+    title: `${tagData.nameHindi || tagData.name} | ${SITE_NAME}`,
+    description: tagData.description || `${tagData.nameHindi || tagData.name} से जुड़ी ताजा खबरें`,
     robots: { index: true },
   };
 }
 
 export default async function TagPage({ params }: Props) {
-  const tag = await getTagBySlug(params.tag);
-  if (!tag) notFound();
+  const { tag } = await params;
+  const tagData = await getTagBySlug(tag);
+  if (!tagData) notFound();
 
-  const articles = await getArticles({ tag: params.tag, limit: 16 }).catch(() => ({ docs: [] }));
+  const articles = await getArticles({ tag, limit: 16 }).catch(() => ({ docs: [] }));
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="border-l-4 pl-4 mb-8" style={{ borderColor: "#C8102E" }}>
         <h1 className="font-hindi text-2xl font-extrabold text-gray-900">
-          #{tag.nameHindi || tag.name}
+          #{tagData.nameHindi || tagData.name}
         </h1>
-        {tag.description && <p className="text-sm text-gray-500 mt-1 font-hindi">{tag.description}</p>}
+        {tagData.description && <p className="text-sm text-gray-500 mt-1 font-hindi">{tagData.description}</p>}
       </div>
 
       {articles.docs.length > 0 ? (
