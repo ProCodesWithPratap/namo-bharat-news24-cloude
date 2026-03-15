@@ -20,15 +20,17 @@ async function fetchPayload<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
-  const res = await fetch(`${API}/api${path}`, {
-    headers: { "Content-Type": "application/json" },
-    next: { revalidate: 60 },
-    ...options,
-  });
-  if (!res.ok) {
-    throw new Error(`Payload fetch error: ${res.status} ${path}`);
+  try {
+    const res = await fetch(`${API}/api${path}`, {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 60 },
+      ...options,
+    });
+    if (!res.ok) return { docs: [], totalDocs: 0, totalPages: 0 } as T;
+    return res.json();
+  } catch (e) {
+    return { docs: [], totalDocs: 0, totalPages: 0 } as T;
   }
-  return res.json();
 }
 
 // ── Articles ──────────────────────────────────────────────────────────────
