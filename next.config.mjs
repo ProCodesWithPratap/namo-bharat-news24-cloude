@@ -9,6 +9,7 @@ const nextConfig = {
     ],
     formats: ["image/avif", "image/webp"],
   },
+  experimental: {},
   async headers() {
     return [
       {

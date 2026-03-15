@@ -9,7 +9,9 @@ import {
 } from "@/lib/api";
 import { NAV_CATEGORIES, SITE_NAME, SITE_DESCRIPTION } from "@/lib/utils";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: `नमो: भारत न्यूज़ 24 - ताजा हिंदी खबरें, ब्रेकिंग न्यूज़`,

@@ -1,5 +1,6 @@
 import { getLatestArticles, getImageUrl } from "@/lib/api";
 import { SITE_NAME, SITE_URL, SITE_DESCRIPTION } from "@/lib/utils";
+export const dynamic = "force-dynamic";
 
 export const revalidate = 300;
 
