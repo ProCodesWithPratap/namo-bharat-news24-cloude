@@ -14,7 +14,18 @@ export const Users: CollectionConfig = {
   },
   access: {
     read: ({ req: { user } }) => !!user,
-    create: ({ req: { user } }) => user?.role === "super-admin",
+    create: async ({ req }) => {
+      if (req.user?.role === "super-admin") return true;
+
+      const existingUsers = await req.payload.find({
+        collection: "users",
+        limit: 1,
+        depth: 0,
+        overrideAccess: true,
+      });
+
+      return existingUsers.totalDocs === 0;
+    },
     update: ({ req: { user }, id }) => {
       if (user?.role === "super-admin") return true;
       return user?.id === id;

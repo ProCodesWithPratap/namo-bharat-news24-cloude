@@ -22,9 +22,23 @@ import { Ads } from "./collections/Ads";
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
+const isProduction = process.env.NODE_ENV === "production";
+const serverURL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+const payloadSecret = process.env.PAYLOAD_SECRET;
+const databaseURI = process.env.DATABASE_URI;
+const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+
+if (isProduction && !payloadSecret) {
+  throw new Error("Missing PAYLOAD_SECRET environment variable in production.");
+}
+
+if (isProduction && !databaseURI) {
+  throw new Error("Missing DATABASE_URI environment variable in production.");
+}
+
 export default buildConfig({
-  serverURL: process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000",
-  secret: process.env.PAYLOAD_SECRET || "fallback-dev-secret-change-in-production",
+  serverURL,
+  secret: payloadSecret || "dev-only-secret",
   admin: {
     user: Users.slug,
     meta: {
@@ -46,12 +60,10 @@ export default buildConfig({
     Ads,
   ],
   editor: lexicalEditor({
-    features: ({ defaultFeatures }) => [
-      ...defaultFeatures,
-    ],
+    features: ({ defaultFeatures }) => [...defaultFeatures],
   }),
   db: mongooseAdapter({
-    url: process.env.DATABASE_URI || "mongodb://localhost:27017/news-portal",
+    url: databaseURI || "mongodb://localhost:27017/news-portal",
   }),
   sharp,
   i18n: {
@@ -59,11 +71,11 @@ export default buildConfig({
   },
   plugins: [
     vercelBlobStorage({
-      enabled: process.env.NODE_ENV === "production",
+      enabled: Boolean(blobToken),
       collections: {
         media: true,
       },
-      token: process.env.BLOB_READ_WRITE_TOKEN || "",
+      token: blobToken || "",
     }),
   ],
   typescript: {
@@ -74,7 +86,7 @@ export default buildConfig({
   },
   upload: {
     limits: {
-      fileSize: 20000000, // 20MB
+      fileSize: 20000000,
     },
   },
 });

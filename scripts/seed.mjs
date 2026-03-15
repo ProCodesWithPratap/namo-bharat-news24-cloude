@@ -1,87 +1,105 @@
 /**
  * Seed Script — नमो: भारत न्यूज़ 24
- * Run ONCE after deployment to create admin user + default categories.
- * Usage: node scripts/seed.mjs
- *
- * Requires env vars: NEXT_PUBLIC_SERVER_URL, ADMIN_EMAIL, ADMIN_PASSWORD
+ * Usage: NEXT_PUBLIC_SERVER_URL=http://localhost:3000 ADMIN_EMAIL=... ADMIN_PASSWORD=... node scripts/seed.mjs
  */
 
 const BASE = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "namobharatlive24@gmail.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "ChangeMe@2024!";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-async function post(path, body, token) {
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error("❌ Missing ADMIN_EMAIL or ADMIN_PASSWORD. Provide both as environment variables.");
+  process.exit(1);
+}
+
+async function request(path, { method = "GET", body, token } = {}) {
   const headers = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const res = await fetch(`${BASE}/api${path}`, {
-    method: "POST",
+    method,
     headers,
-    body: JSON.stringify(body),
+    body: body ? JSON.stringify(body) : undefined,
   });
-  const data = await res.json();
-  if (!res.ok) {
-    console.error(`❌ POST ${path}`, data);
+
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function createIfMissing(path, body, token, label) {
+  const result = await request(path, { method: "POST", body, token });
+
+  if (result.ok) {
+    console.log(`   ✅ ${label}`);
+    return result.data;
+  }
+
+  if (result.status === 409 || result.status === 400) {
+    console.log(`   ⚠️  ${label} already exists — skipping`);
     return null;
   }
-  return data;
+
+  console.error(`   ❌ Failed to create ${label}`, result.data?.errors || result.data);
+  return null;
 }
 
 async function seed() {
   console.log("\n🌱 Seeding नमो: भारत न्यूज़ 24...\n");
 
-  // ── Step 1: Create first admin user ──────────────────────────────────────
-  console.log("1️⃣  Creating admin user...");
-  const userResult = await post("/users", {
-    name: "Admin",
-    email: ADMIN_EMAIL,
-    password: ADMIN_PASSWORD,
-    role: "super-admin",
-    isActive: true,
-  });
-  if (userResult?.doc) {
-    console.log(`   ✅ Admin created: ${ADMIN_EMAIL}`);
-  } else {
-    console.log(`   ⚠️  Admin may already exist — continuing...`);
+  console.log("1️⃣  Creating first admin user if needed...");
+  const userResult = await createIfMissing(
+    "/users",
+    {
+      name: "Admin",
+      email: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
+      role: "super-admin",
+      isActive: true,
+    },
+    undefined,
+    `Admin user (${ADMIN_EMAIL})`,
+  );
+
+  if (!userResult) {
+    console.log("   ℹ️  Admin not created during this run (existing user or validation). Continuing to login...");
   }
 
-  // ── Step 2: Login to get token ─────────────────────────────────────────
   console.log("2️⃣  Logging in...");
-  const loginResult = await post("/users/login", {
-    email: ADMIN_EMAIL,
-    password: ADMIN_PASSWORD,
+  const loginResult = await request("/users/login", {
+    method: "POST",
+    body: {
+      email: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
+    },
   });
-  const token = loginResult?.token;
-  if (!token) {
-    console.error("   ❌ Login failed. Check ADMIN_EMAIL and ADMIN_PASSWORD env vars.");
+
+  const token = loginResult.data?.token;
+  if (!loginResult.ok || !token) {
+    console.error("   ❌ Login failed. Verify ADMIN_EMAIL and ADMIN_PASSWORD.");
     process.exit(1);
   }
   console.log("   ✅ Logged in successfully");
 
-  // ── Step 3: Create categories ──────────────────────────────────────────
   console.log("3️⃣  Creating categories...");
-
   const categories = [
-    { name: "National",      nameHindi: "राष्ट्रीय",    slug: "national",      navOrder: 1, showInNav: true },
-    { name: "States",        nameHindi: "राज्य",        slug: "states",        navOrder: 2, showInNav: true },
-    { name: "Politics",      nameHindi: "राजनीति",      slug: "politics",      navOrder: 3, showInNav: true },
-    { name: "Business",      nameHindi: "व्यापार",      slug: "business",      navOrder: 4, showInNav: true },
-    { name: "Sports",        nameHindi: "खेल",           slug: "sports",        navOrder: 5, showInNav: true },
-    { name: "Entertainment", nameHindi: "मनोरंजन",     slug: "entertainment", navOrder: 6, showInNav: true },
-    { name: "Technology",    nameHindi: "तकनीक",       slug: "technology",    navOrder: 7, showInNav: true },
-    { name: "Education",     nameHindi: "शिक्षा",       slug: "education",     navOrder: 8, showInNav: true },
-    { name: "Lifestyle",     nameHindi: "जीवन-शैली",   slug: "lifestyle",     navOrder: 9, showInNav: true },
-    { name: "Jobs",          nameHindi: "नौकरी",        slug: "jobs",          navOrder: 10, showInNav: true },
-    { name: "Religion",      nameHindi: "धर्म",         slug: "religion",      navOrder: 11, showInNav: false },
+    { name: "National", nameHindi: "राष्ट्रीय", slug: "national", navOrder: 1, showInNav: true },
+    { name: "States", nameHindi: "राज्य", slug: "states", navOrder: 2, showInNav: true },
+    { name: "Politics", nameHindi: "राजनीति", slug: "politics", navOrder: 3, showInNav: true },
+    { name: "Business", nameHindi: "व्यापार", slug: "business", navOrder: 4, showInNav: true },
+    { name: "Sports", nameHindi: "खेल", slug: "sports", navOrder: 5, showInNav: true },
+    { name: "Entertainment", nameHindi: "मनोरंजन", slug: "entertainment", navOrder: 6, showInNav: true },
+    { name: "Technology", nameHindi: "तकनीक", slug: "technology", navOrder: 7, showInNav: true },
+    { name: "Education", nameHindi: "शिक्षा", slug: "education", navOrder: 8, showInNav: true },
+    { name: "Lifestyle", nameHindi: "जीवन-शैली", slug: "lifestyle", navOrder: 9, showInNav: true },
+    { name: "Jobs", nameHindi: "नौकरी", slug: "jobs", navOrder: 10, showInNav: true },
+    { name: "Religion", nameHindi: "धर्म", slug: "religion", navOrder: 11, showInNav: false },
     { name: "International", nameHindi: "अंतरराष्ट्रीय", slug: "international", navOrder: 12, showInNav: false },
   ];
 
   for (const cat of categories) {
-    const r = await post("/categories", cat, token);
-    if (r?.doc) console.log(`   ✅ Category: ${cat.nameHindi}`);
-    else console.log(`   ⚠️  ${cat.nameHindi} may already exist`);
+    await createIfMissing("/categories", cat, token, `Category: ${cat.nameHindi}`);
   }
 
-  // ── Step 4: Create sample tags ─────────────────────────────────────────
   console.log("4️⃣  Creating sample tags...");
   const tags = [
     { name: "Modi", nameHindi: "मोदी", slug: "modi" },
@@ -97,11 +115,9 @@ async function seed() {
   ];
 
   for (const tag of tags) {
-    const r = await post("/tags", tag, token);
-    if (r?.doc) console.log(`   ✅ Tag: ${tag.nameHindi}`);
+    await createIfMissing("/tags", tag, token, `Tag: ${tag.nameHindi}`);
   }
 
-  // ── Step 5: Create sample locations ───────────────────────────────────
   console.log("5️⃣  Creating sample locations...");
   const locations = [
     { name: "India", nameHindi: "भारत", slug: "india", type: "country" },
@@ -116,22 +132,15 @@ async function seed() {
   ];
 
   for (const loc of locations) {
-    await post("/locations", loc, token);
+    await createIfMissing("/locations", loc, token, `Location: ${loc.nameHindi}`);
   }
-  console.log("   ✅ Locations created");
 
-  // ── Step 6: Create a sample welcome article ────────────────────────────
-  console.log("6️⃣  Creating welcome article...");
-
-  // First get national category id
-  const catRes = await fetch(`${BASE}/api/categories?where[slug][equals]=national&limit=1`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const catData = await catRes.json();
-  const nationalId = catData.docs?.[0]?.id;
+  console.log("6️⃣  Creating welcome article if needed...");
+  const catRes = await request("/categories?where[slug][equals]=national&limit=1", { token });
+  const nationalId = catRes.data?.docs?.[0]?.id;
 
   if (nationalId) {
-    await post(
+    await createIfMissing(
       "/articles",
       {
         headline: "Welcome to Namo Bharat News 24",
@@ -154,17 +163,6 @@ async function seed() {
                 ],
                 version: 1,
               },
-              {
-                type: "paragraph",
-                children: [
-                  {
-                    type: "text",
-                    text: "हमारी टीम 24 घंटे, 7 दिन आपको ताजा खबरें देने के लिए काम करती है। राजनीति, खेल, मनोरंजन, व्यापार, तकनीक — हर विषय पर गहन कवरेज।",
-                    version: 1,
-                  },
-                ],
-                version: 1,
-              },
             ],
             direction: null,
             format: "",
@@ -178,20 +176,17 @@ async function seed() {
         featured: true,
         language: "hi",
       },
-      token
+      token,
+      "Welcome article",
     );
-    console.log("   ✅ Welcome article created");
+  } else {
+    console.log("   ⚠️  National category not found, skipping welcome article");
   }
 
-  console.log(`
-╔══════════════════════════════════════════════════════════╗
-║         🎉 Seed Complete! नमो: भारत न्यूज़ 24            ║
-╠══════════════════════════════════════════════════════════╣
-║  Admin URL:   ${BASE}/admin                
-║  Admin Email: ${ADMIN_EMAIL}          
-║  ⚠️  CHANGE YOUR PASSWORD IMMEDIATELY AFTER LOGIN!       ║
-╚══════════════════════════════════════════════════════════╝
-`);
+  console.log(`\n✅ Seed complete. Admin: ${BASE}/admin\n`);
 }
 
-seed().catch(console.error);
+seed().catch((error) => {
+  console.error("❌ Seed failed", error);
+  process.exit(1);
+});
