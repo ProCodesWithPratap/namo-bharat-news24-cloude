@@ -5,18 +5,20 @@ import { SITE_NAME } from "@/lib/utils";
 
 export const revalidate = 0;
 
-interface Props { searchParams: { q?: string; page?: string } }
+type Props = { searchParams: Promise<{ q?: string; page?: string }> }
 
-export function generateMetadata({ searchParams }: Props): Metadata {
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const { q = "" } = await searchParams;
   return {
-    title: searchParams.q ? `"${searchParams.q}" - Search | ${SITE_NAME}` : `Search | ${SITE_NAME}`,
+    title: q ? `"${q}" - Search | ${SITE_NAME}` : `Search | ${SITE_NAME}`,
     robots: { index: false },
   };
 }
 
 export default async function SearchPage({ searchParams }: Props) {
-  const query = searchParams.q || "";
-  const page = Number(searchParams.page) || 1;
+  const { q = "", page: pageParam } = await searchParams;
+  const query = q;
+  const page = Number(pageParam) || 1;
 
   const results = query
     ? await searchArticles(query, 12, page).catch(() => ({ docs: [], totalDocs: 0 }))

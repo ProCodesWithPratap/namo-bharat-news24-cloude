@@ -10,11 +10,15 @@ type Args = {
 export async function generateMetadata({ params, searchParams }: Args): Promise<Metadata> {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
-  return generatePageMetadata({ config: configPromise, params: resolvedParams, searchParams: resolvedSearchParams });
+  void resolvedParams;
+  void resolvedSearchParams;
+  return generatePageMetadata({ config: configPromise, params, searchParams });
 }
 
 export default async function Page({ params, searchParams }: Args) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
-  return RootPage({ config: configPromise, params: resolvedParams, searchParams: resolvedSearchParams });
+  void resolvedParams;
+  void resolvedSearchParams;
+  return RootPage({ config: configPromise, params, searchParams } as any);
 }

@@ -29,8 +29,6 @@ export default buildConfig({
     user: Users.slug,
     meta: {
       titleSuffix: " — News Portal Admin",
-      favicon: "/favicon.ico",
-      ogImage: "/og-image.png",
     },
     components: {},
   },
