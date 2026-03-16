@@ -5,7 +5,7 @@ export const Categories: CollectionConfig = {
   admin: {
     useAsTitle: "name",
     defaultColumns: ["name", "nameHindi", "slug", "parent", "navOrder"],
-    group: "Content",
+    group: "Taxonomy",
   },
   access: { read: () => true },
   fields: [

@@ -25,14 +25,25 @@ export const Articles: CollectionConfig = {
   access: articleAccess,
   hooks: {
     beforeChange: [
-      async ({ data, operation }) => {
-        if (operation === "create" && !data.slug && data.headline) {
+      async ({ data }) => {
+        if (!data.slug && data.headline) {
           data.slug = data.headline
             .toLowerCase()
             .replace(/[^a-z0-9\s-]/g, "")
             .replace(/\s+/g, "-")
             .substring(0, 100);
         }
+
+        if (typeof data.slug === "string") {
+          data.slug = data.slug
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "")
+            .substring(0, 100);
+        }
+
         return data;
       },
     ],
@@ -64,7 +75,8 @@ export const Articles: CollectionConfig = {
       unique: true,
       label: "URL Slug",
       admin: {
-        description: "Auto-generated but editable. Use only lowercase letters, numbers, hyphens.",
+        description:
+          "Auto-generated from headline. Editors can fine tune this for SEO, but keep it short and hyphenated.",
       },
     },
     {
@@ -85,6 +97,18 @@ export const Articles: CollectionConfig = {
       type: "upload",
       relationTo: "media",
       label: "Hero Image / Video",
+      admin: {
+        description:
+          "Recommended before publishing. Use a strong lead visual with complete alt text in Media Library.",
+      },
+      validate: (value: unknown, { siblingData }: { siblingData?: { status?: string } }) => {
+        const status = siblingData?.status;
+        if (status && ["ready", "published"].includes(status) && !value) {
+          return "Hero media is required before an article can be marked Ready or Published.";
+        }
+
+        return true;
+      },
     },
     {
       name: "heroCaption",
@@ -119,7 +143,12 @@ export const Articles: CollectionConfig = {
       relationTo: "categories",
       required: true,
       label: "Category",
-      admin: { position: "sidebar" },
+      admin: {
+        position: "sidebar",
+        description: "Required: every story must be assigned to a primary desk/category.",
+      },
+      validate: (value: unknown) =>
+        value ? true : "Please assign a primary category before saving this article.",
     },
     {
       name: "subcategory",
@@ -174,7 +203,10 @@ export const Articles: CollectionConfig = {
         { label: "Scheduled", value: "scheduled" },
         { label: "Unpublished", value: "unpublished" },
       ],
-      admin: { position: "sidebar" },
+      admin: {
+        position: "sidebar",
+        description: "Draft = internal only. Published = live on site. Scheduled = publish automatically later.",
+      },
     },
     {
       name: "publishDate",
@@ -183,6 +215,14 @@ export const Articles: CollectionConfig = {
       admin: {
         position: "sidebar",
         date: { pickerAppearance: "dayAndTime" },
+        description: "Set when article goes live. Required when status is Published.",
+      },
+      validate: (value: unknown, { siblingData }: { siblingData?: { status?: string } }) => {
+        if (siblingData?.status === "published" && !value) {
+          return "Publish date is required when status is Published.";
+        }
+
+        return true;
       },
     },
     {
@@ -283,7 +323,10 @@ export const Articles: CollectionConfig = {
       name: "editorialNotes",
       type: "textarea",
       label: "Internal Editorial Notes (not published)",
-      admin: { position: "sidebar" },
+      admin: {
+        position: "sidebar",
+        description: "Use for handoff notes (fact-check, legal, social copy, or updates needed).",
+      },
     },
   ],
   timestamps: true,

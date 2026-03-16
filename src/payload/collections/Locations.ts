@@ -5,7 +5,7 @@ export const Locations: CollectionConfig = {
   admin: {
     useAsTitle: "name",
     defaultColumns: ["name", "state", "district"],
-    group: "Content",
+    group: "Taxonomy",
   },
   access: { read: () => true },
   fields: [
