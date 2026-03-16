@@ -16,6 +16,7 @@ export const Media: CollectionConfig = {
   admin: {
     group: "Media",
     defaultColumns: ["filename", "alt", "credit", "updatedAt"],
+    description: "Upload production-ready visuals with clear alt text, caption, and rights metadata.",
   },
   access: {
     read: () => true,
@@ -26,21 +27,32 @@ export const Media: CollectionConfig = {
       type: "text",
       required: true,
       label: "Alt Text (for SEO & accessibility)",
+      admin: {
+        description: "Describe the image in one sentence so readers using assistive tech understand the visual.",
+      },
+      validate: (value: string | null | undefined) => {
+        if (!value) return "Alt text is required for newsroom accessibility and SEO.";
+        if (value.trim().length < 8) return "Alt text is too short. Add a descriptive sentence.";
+        return true;
+      },
     },
     {
       name: "caption",
       type: "text",
       label: "Caption",
+      admin: { description: "Optional on cards, but recommended for context on long-form stories." },
     },
     {
       name: "credit",
       type: "text",
       label: "Photographer / Source Credit",
+      admin: { description: "Use agency/source format, e.g. PTI, Reuters, Staff Photo." },
     },
     {
       name: "usageRights",
       type: "select",
       label: "Usage Rights",
+      defaultValue: "own",
       options: [
         { label: "Own / Licensed", value: "own" },
         { label: "AP / PTI", value: "agency" },

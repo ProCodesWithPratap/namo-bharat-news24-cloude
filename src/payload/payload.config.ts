@@ -42,9 +42,16 @@ export default buildConfig({
   admin: {
     user: Users.slug,
     meta: {
-      titleSuffix: " — News Portal Admin",
+      titleSuffix: " — Namo Bharat News 24 CMS",
+      title: "Namo Bharat News 24 Admin",
     },
-    components: {},
+    components: {
+      graphics: {
+        Logo: "@/payload/admin/components/BrandLogo#default",
+      },
+      beforeLogin: ["@/payload/admin/components/LoginIntro#default"],
+      beforeDashboard: ["@/payload/admin/components/DashboardStats#default"],
+    },
   },
   collections: [
     Users,
