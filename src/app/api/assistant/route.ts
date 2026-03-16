@@ -118,22 +118,37 @@ function pickArticlesByIntent(
   return combined.slice(0, 6);
 }
 
+function dedupeArticles(items: ArticleHint[]): ArticleHint[] {
+  const unique = new Map<string, ArticleHint>();
+  for (const item of items) {
+    if (!item?.id || unique.has(item.id)) continue;
+    unique.set(item.id, item);
+  }
+  return [...unique.values()];
+}
+
 function pickSuggestions(query: string, context: Awaited<ReturnType<typeof buildNewsContext>>): ArticleHint[] {
   const intent = detectIntent(query);
   const q = query.toLowerCase();
-  const combined = [...pickArticlesByIntent(intent, context), ...context.latestArticles];
+  const leadHomepageStory = context.featuredArticles[0] || context.breakingArticles[0];
+
+  if (intent === "latest" || intent === "today") {
+    return dedupeArticles([
+      ...(leadHomepageStory ? [leadHomepageStory] : []),
+      ...context.latestArticles,
+      ...context.breakingArticles,
+      ...context.featuredArticles,
+    ]).slice(0, 6);
+  }
+
+  const combined = dedupeArticles([...pickArticlesByIntent(intent, context), ...context.latestArticles]);
 
   const keywordMatched = combined.filter((article) => {
     const hay = `${article.title} ${article.category} ${article.excerpt}`.toLowerCase();
     return q.split(" ").some((token) => token.length > 2 && hay.includes(token));
   });
 
-  const unique = new Map<string, ArticleHint>();
-  [...keywordMatched, ...combined].forEach((item) => {
-    if (!unique.has(item.id)) unique.set(item.id, item);
-  });
-
-  return [...unique.values()].slice(0, 4);
+  return dedupeArticles([...keywordMatched, ...combined]).slice(0, 4);
 }
 
 function pickCategoryLinks(intent: AssistantIntent, categories: CategoryHint[]) {
@@ -186,31 +201,68 @@ function buildFallbackReply(
   reason: "no-context" | "ai-unavailable" = "ai-unavailable",
 ) {
   const intent = detectIntent(query);
-  const categoryLinks = pickCategoryLinks(intent, categories);
+  const categoryLinks = pickCategoryLinks(intent, categories).map((cat) => ({
+    id: `category-${cat.slug}`,
+    title: `${cat.name} सेक्शन`,
+    category: "Section",
+    url: cat.url,
+    slug: cat.slug,
+    excerpt: "इस सेक्शन में ताज़ा अपडेट पढ़ें।",
+    publishDate: "",
+    isBreaking: false,
+    isFeatured: false,
+  })) as ArticleHint[];
 
   if (!suggestions.length) {
-    const categoryText = categoryLinks
-      .map((cat) => `• ${cat.name}: ${cat.url}`)
-      .join("\n");
-
     return {
-      reply:
-        `अभी साइट पर बहुत कम ताज़ा प्रकाशित खबरें उपलब्ध हैं। तब तक आप इन सेक्शनों से सीधे पढ़ सकते हैं:\n${categoryText || `• राष्ट्रीय: ${SITE_URL}/national\n• लाइव: ${SITE_URL}/live\n• वीडियो: ${SITE_URL}/videos`}\n\nआप चाहें तो मुझसे पूछें: "आज की खबर क्या है" या "ट्रेंडिंग खबरें"।`,
-      articles: [],
+      reply: "अभी लाइव कंटेंट सीमित है, लेकिन नीचे आपके लिए कुछ काम की रीडिंग्स हैं।",
+      articles:
+        categoryLinks.length > 0
+          ? categoryLinks
+          : [
+              {
+                id: "category-national",
+                title: "राष्ट्रीय सेक्शन",
+                category: "Section",
+                url: `${SITE_URL}/national`,
+                slug: "national",
+                excerpt: "देशभर की अहम खबरें पढ़ें।",
+                publishDate: "",
+                isBreaking: false,
+                isFeatured: false,
+              },
+              {
+                id: "category-live",
+                title: "लाइव अपडेट",
+                category: "Section",
+                url: `${SITE_URL}/live`,
+                slug: "live",
+                excerpt: "तेज़ अपडेट और ब्रेकिंग फीड देखें।",
+                publishDate: "",
+                isBreaking: false,
+                isFeatured: false,
+              },
+            ],
       source: reason === "no-context" ? "fallback-no-context" : "safe-fallback",
     };
   }
 
-  const lines = suggestions.slice(0, 3).map((article, index) => `${index + 1}. ${article.title} — ${article.url}`);
-
   return {
     reply:
       reason === "no-context"
-        ? `इस समय सीमित डेटा मिला है, लेकिन अभी प्रकाशित खबरों में ये उपयोगी हैं:\n${lines.join("\n")}`
-        : `AI मोड अस्थायी रूप से धीमा है। अभी के लिए प्रकाशित खबरों में ये सीधे पढ़ें:\n${lines.join("\n")}`,
+        ? "इस समय कंटेंट सीमित है—नीचे उपलब्ध सबसे उपयोगी खबरें दी गई हैं।"
+        : "AI अभी थोड़ा धीमा है—नीचे ताज़ा उपयोगी खबरें तुरंत पढ़ें।",
     articles: suggestions,
     source: "safe-fallback",
   };
+}
+
+function removeRawUrls(text: string): string {
+  return text
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function extractResponseText(payload: any): string {
@@ -303,7 +355,7 @@ export async function POST(req: Request) {
 
     try {
       const reply = await requestOpenAIReply({ apiKey, model, systemPrompt, history, message });
-      return Response.json({ reply, articles: suggestions, source: "openai" });
+      return Response.json({ reply: removeRawUrls(reply), articles: suggestions, source: "openai" });
     } catch {
       return Response.json(buildFallbackReply(message, suggestions, context.categoryList));
     }
