@@ -31,8 +31,7 @@ const QUICK_ACTION_MESSAGES: Record<string, string> = {
 const OFFLINE_REPLY =
   "AI News Desk अभी उपलब्ध नहीं है। कृपया थोड़ी देर में दोबारा कोशिश करें या Contact पेज देखें।";
 
-const EMPTY_ARTICLES_NOTE =
-  "अभी साइट पर दिखाने के लिए पर्याप्त आर्टिकल उपलब्ध नहीं हैं। आप categories से ब्राउज़ कर सकते हैं।";
+const EMPTY_ARTICLES_NOTE = "अभी कंटेंट सीमित है। नीचे सेक्शन कार्ड्स से सीधे पढ़ना शुरू करें।";
 
 export default function NewsAssistant() {
   const [open, setOpen] = useState(false);
@@ -74,72 +73,19 @@ export default function NewsAssistant() {
         throw new Error(payload.error || OFFLINE_REPLY);
       }
 
-      const contentType = response.headers.get("content-type") || "";
+      const payload = await response.json().catch(() => null);
+      if (!payload?.reply) throw new Error(OFFLINE_REPLY);
 
-      if (contentType.includes("text/event-stream") && response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const chunks = buffer.split("\n\n");
-          buffer = chunks.pop() || "";
-
-          for (const chunk of chunks) {
-            if (!chunk.startsWith("data:")) continue;
-            const data = JSON.parse(chunk.replace(/^data:\s*/, "")) as {
-              type: "delta" | "meta" | "done" | "error";
-              delta?: string;
-              message?: string;
-              articles?: ArticleHint[];
-            };
-
-            if (data.type === "delta" && data.delta) {
-              setMessages((prev) => {
-                const next = [...prev];
-                const idx = next.length - 1;
-                next[idx] = {
-                  ...next[idx],
-                  content: `${next[idx].content}${data.delta}`,
-                };
-                return next;
-              });
-            }
-
-            if (data.type === "meta") {
-              setMessages((prev) => {
-                const next = [...prev];
-                const idx = next.length - 1;
-                next[idx] = {
-                  ...next[idx],
-                  articles: data.articles || [],
-                };
-                return next;
-              });
-            }
-
-            if (data.type === "error") {
-              throw new Error(data.message || OFFLINE_REPLY);
-            }
-          }
-        }
-      } else {
-        const payload = await response.json().catch(() => null);
-        if (!payload?.reply) throw new Error(OFFLINE_REPLY);
-        setMessages((prev) => {
-          const next = [...prev];
-          const idx = next.length - 1;
-          next[idx] = {
-            ...next[idx],
-            content: payload.reply,
-            articles: payload.articles || [],
-          };
-          return next;
-        });
-      }
+      setMessages((prev) => {
+        const next = [...prev];
+        const idx = next.length - 1;
+        next[idx] = {
+          ...next[idx],
+          content: payload.reply,
+          articles: payload.articles || [],
+        };
+        return next;
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : OFFLINE_REPLY;
       setError(msg);
@@ -172,7 +118,7 @@ export default function NewsAssistant() {
         className={cn(
           "fixed z-[120] transition-all duration-300",
           open ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0",
-          "bottom-[4.25rem] right-2 w-[calc(100vw-1rem)] sm:right-4 sm:bottom-24 sm:w-[min(430px,calc(100vw-2rem))]",
+          "bottom-[4.2rem] right-2 w-[calc(100vw-1rem)] sm:right-4 sm:bottom-24 sm:w-[min(430px,calc(100vw-2rem))]",
         )}
       >
         <div className="overflow-hidden rounded-3xl border border-red-200 bg-white shadow-[0_20px_52px_rgba(15,15,15,0.28)] backdrop-blur">
@@ -181,15 +127,15 @@ export default function NewsAssistant() {
             <p className="text-xs text-red-100">Hindi-first newsroom assistant</p>
           </div>
 
-          <div className="h-[63vh] max-h-[560px] min-h-[320px] space-y-2.5 overflow-y-auto bg-gradient-to-b from-white via-white to-red-50/35 p-2.5 sm:h-[58vh] sm:p-3">
+          <div className="h-[63vh] max-h-[560px] min-h-[320px] space-y-2 overflow-y-auto bg-gradient-to-b from-white via-white to-red-50/30 p-2 sm:h-[58vh] sm:p-3">
             {messages.map((m, i) => (
               <div key={`${m.role}-${i}`} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
-                    "max-w-[94%] rounded-2xl px-3 py-2 text-sm leading-relaxed sm:max-w-[88%]",
+                    "max-w-[95%] rounded-2xl px-3 py-2 text-sm leading-relaxed sm:max-w-[88%]",
                     m.role === "user"
                       ? "rounded-br-md bg-[#C8102E] text-white shadow-[0_6px_16px_rgba(200,16,46,0.25)]"
-                      : "rounded-bl-md border border-red-100 bg-white text-gray-800 shadow-[0_8px_24px_rgba(15,15,15,0.08)]",
+                      : "rounded-bl-md border border-red-100 bg-white text-gray-800 shadow-[0_8px_18px_rgba(15,15,15,0.08)]",
                   )}
                 >
                   <p className="whitespace-pre-wrap">{m.content || (loading && i === messages.length - 1 ? "सोच रहा हूँ…" : "")}</p>
@@ -197,17 +143,28 @@ export default function NewsAssistant() {
                     <p className="mt-2 text-xs text-gray-500">{EMPTY_ARTICLES_NOTE}</p>
                   )}
                   {!!m.articles?.length && (
-                    <div className="mt-2.5 space-y-2">
+                    <div className="mt-2.5 grid gap-2">
                       {m.articles.map((a) => (
-                        <Link
+                        <article
                           key={a.id}
-                          href={a.url}
-                          className="block rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white px-2.5 py-2 text-xs text-gray-800 transition hover:border-red-300 hover:from-red-100 hover:to-red-50"
+                          className="rounded-xl border border-red-200/90 bg-gradient-to-b from-white via-red-50/40 to-red-50 px-3 py-2.5 shadow-[0_8px_20px_rgba(200,16,46,0.08)]"
                         >
-                          <span className="line-clamp-2 font-semibold text-[12.5px] text-gray-900">{a.title}</span>
-                          {a.excerpt && <p className="mt-1 line-clamp-2 text-[11px] text-gray-600">{a.excerpt}</p>}
-                          <span className="mt-1 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">{a.category}</span>
-                        </Link>
+                          <p className="line-clamp-2 text-[13px] font-semibold text-gray-900">{a.title}</p>
+                          <div className="mt-1 flex items-center justify-between gap-2">
+                            <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                              {a.category}
+                            </span>
+                          </div>
+                          {a.excerpt && <p className="mt-1.5 line-clamp-2 text-[11px] text-gray-600">{a.excerpt}</p>}
+                          <div className="mt-2">
+                            <Link
+                              href={a.url}
+                              className="inline-flex items-center rounded-lg border border-[#C8102E]/35 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#a00c24] transition hover:bg-red-50"
+                            >
+                              Open / Read
+                            </Link>
+                          </div>
+                        </article>
                       ))}
                     </div>
                   )}
@@ -216,14 +173,14 @@ export default function NewsAssistant() {
             ))}
           </div>
 
-          <div className="border-t border-red-100 bg-white p-2.5 sm:p-3">
+          <div className="border-t border-red-100 bg-white px-2.5 pb-2.5 pt-2 sm:px-3 sm:pb-3 sm:pt-2.5">
             <div className="mb-2.5 flex flex-wrap gap-1.5 sm:gap-2">
               {QUICK_ACTIONS.map((action) => (
                 <button
                   key={action}
                   type="button"
                   onClick={() => sendMessage(QUICK_ACTION_MESSAGES[action] || action)}
-                  className="rounded-full border border-red-200 bg-gradient-to-b from-red-50 to-white px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:border-red-300 hover:from-red-100 hover:to-red-50"
+                  className="rounded-full border border-red-200 bg-white px-2.5 py-1 text-xs font-semibold text-red-700 shadow-sm transition hover:border-red-300 hover:bg-red-50"
                 >
                   {action}
                 </button>
@@ -244,19 +201,19 @@ export default function NewsAssistant() {
                 e.preventDefault();
                 sendMessage(input);
               }}
-              className="flex items-center gap-1.5 sm:gap-2"
+              className="flex items-center gap-2"
             >
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="खबर पूछें... e.g. आज की बड़ी खबर"
-                className="flex-1 rounded-xl border border-red-200 bg-red-50/30 px-3 py-2 text-sm outline-none transition focus:border-[#C8102E] focus:bg-white"
+                className="h-10 flex-1 rounded-xl border border-red-200 bg-red-50/25 px-3 text-sm outline-none transition focus:border-[#C8102E] focus:bg-white"
                 maxLength={1200}
               />
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="rounded-xl bg-[#C8102E] px-3 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(200,16,46,0.28)] disabled:opacity-60"
+                className="h-10 rounded-xl bg-[#C8102E] px-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(200,16,46,0.28)] disabled:opacity-60"
               >
                 भेजें
               </button>
