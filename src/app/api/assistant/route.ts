@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { getBreakingNews, getCategories, getFeaturedArticles, getLatestArticles } from "@/lib/api";
 import { newsroomMeta, socialLinks } from "@/lib/site-config";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
@@ -120,13 +119,93 @@ function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status });
 }
 
+function buildFallbackReply(suggestions: ArticleHint[]) {
+  if (!suggestions.length) {
+    return {
+      reply:
+        "इस समय साइट पर दिखाने के लिए पर्याप्त ताज़ा आर्टिकल नहीं मिले। कृपया थोड़ी देर बाद दोबारा कोशिश करें या किसी कैटेगरी पेज पर जाएँ।",
+      articles: [],
+      source: "safe-fallback",
+    };
+  }
+
+  const topArticle = suggestions[0];
+  return {
+    reply: `मैं अभी AI मोड में जवाब नहीं दे पा रहा हूँ, लेकिन ${topArticle.category} से यह खबर मददगार हो सकती है: ${topArticle.title}`,
+    articles: suggestions,
+    source: "safe-fallback",
+  };
+}
+
+function extractResponseText(payload: any): string {
+  if (typeof payload?.output_text === "string" && payload.output_text.trim()) return payload.output_text.trim();
+  if (Array.isArray(payload?.output)) {
+    const parts: string[] = [];
+    for (const item of payload.output) {
+      if (!Array.isArray(item?.content)) continue;
+      for (const content of item.content) {
+        if (content?.type === "output_text" && typeof content?.text === "string") {
+          parts.push(content.text);
+        }
+      }
+    }
+    const merged = parts.join(" ").trim();
+    if (merged) return merged;
+  }
+  return "";
+}
+
+async function requestOpenAIReply({
+  apiKey,
+  model,
+  systemPrompt,
+  history,
+  message,
+}: {
+  apiKey: string;
+  model: string;
+  systemPrompt: string;
+  history: ChatHistoryItem[];
+  message: string;
+}) {
+  const input = [
+    {
+      role: "system",
+      content: [{ type: "input_text", text: systemPrompt }],
+    },
+    ...history.map((item) => ({
+      role: item.role,
+      content: [{ type: "input_text", text: item.content }],
+    })),
+    {
+      role: "user",
+      content: [{ type: "input_text", text: message }],
+    },
+  ];
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      input,
+      temperature: 0.2,
+      max_output_tokens: 450,
+    }),
+  });
+
+  if (!response.ok) throw new Error("openai-unavailable");
+  const payload = await response.json();
+  const reply = extractResponseText(payload);
+  if (!reply) throw new Error("empty-openai-reply");
+  return reply;
+}
+
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return jsonError("AI assistant is not configured right now.", 503);
-    }
-
     const body = await req.json().catch(() => ({}));
     const message = sanitizeText(body?.message, MAX_MESSAGE_CHARS);
     const history = normalizeHistory(body?.history);
@@ -138,73 +217,20 @@ export async function POST(req: Request) {
     const context = await buildNewsContext();
     const suggestions = pickSuggestions(message, context);
 
-    const client = new OpenAI({ apiKey });
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return Response.json(buildFallbackReply(suggestions));
+    }
+
     const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
     const systemPrompt = createSystemPrompt(context);
 
-    const stream = await client.responses.stream({
-      model,
-      input: [
-        {
-          role: "system",
-          content: [{ type: "input_text", text: systemPrompt }],
-        },
-        ...history.map((item) => ({
-          role: item.role,
-          content: [{ type: "input_text" as const, text: item.content }],
-        })),
-        {
-          role: "user",
-          content: [{ type: "input_text", text: message }],
-        },
-      ],
-      temperature: 0.2,
-      max_output_tokens: 450,
-    });
-
-    const encoder = new TextEncoder();
-
-    const responseStream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const event of stream) {
-            if (event.type === "response.output_text.delta") {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: "delta", delta: event.delta })}\n\n`),
-              );
-            }
-          }
-
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: "meta", articles: suggestions, source: "site-context" })}\n\n`,
-            ),
-          );
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
-          controller.close();
-        } catch {
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "error",
-                message: "Assistant response interrupted. Please try again.",
-              })}\n\n`,
-            ),
-          );
-          controller.close();
-        } finally {
-          stream.controller.abort();
-        }
-      },
-    });
-
-    return new Response(responseStream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive",
-      },
-    });
+    try {
+      const reply = await requestOpenAIReply({ apiKey, model, systemPrompt, history, message });
+      return Response.json({ reply, articles: suggestions, source: "openai" });
+    } catch {
+      return Response.json(buildFallbackReply(suggestions));
+    }
   } catch {
     return jsonError("Unable to process assistant request right now.", 500);
   }

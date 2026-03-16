@@ -4,7 +4,7 @@
  * Next.js server components, route handlers, and ISR.
  */
 
-const API = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+const API = process.env.NEXT_PUBLIC_SERVER_URL?.replace(/\/$/, "") || "";
 
 type QueryParams = Record<string, string | number | boolean | undefined>;
 
@@ -20,8 +20,10 @@ async function fetchPayload<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
+  const endpoint = API ? `${API}/api${path}` : `/api${path}`;
+
   try {
-    const res = await fetch(`${API}/api${path}`, {
+    const res = await fetch(endpoint, {
       headers: { "Content-Type": "application/json" },
       next: { revalidate: 60 },
       ...options,
