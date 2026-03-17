@@ -1,5 +1,8 @@
 import type { CollectionConfig } from "payload";
 
+const MAX_IMAGE_SIZE_BYTES = 500_000; // 500KB soft warning
+const MAX_IMAGE_SIZE_HARD = 5_000_000; // 5MB hard reject
+
 export const Media: CollectionConfig = {
   slug: "media",
   upload: {
@@ -16,10 +19,37 @@ export const Media: CollectionConfig = {
   admin: {
     group: "Media",
     defaultColumns: ["filename", "alt", "credit", "updatedAt"],
-    description: "Upload production-ready visuals with clear alt text, caption, and rights metadata.",
+    description:
+      "Upload production-ready visuals. Images are auto-resized to 4 sizes (thumbnail/card/hero/og). Recommended: keep originals under 500KB for best performance.",
   },
   access: {
     read: () => true,
+  },
+  hooks: {
+    beforeChange: [
+      async ({ data, req }) => {
+        const file = req?.file;
+        if (file && file.size) {
+          // Hard limit: reject over 5MB with Hindi error message
+          if (file.size > MAX_IMAGE_SIZE_HARD) {
+            throw new Error(
+              `फ़ाइल बहुत बड़ी है (${(file.size / 1_000_000).toFixed(1)}MB)। अधिकतम 5MB की फ़ाइल अपलोड करें।`
+            );
+          }
+          // Soft warning: log files over 500KB
+          if (file.size > MAX_IMAGE_SIZE_BYTES && req.payload?.logger) {
+            req.payload.logger.warn(
+              `[Media] Large image: ${file.name || "unknown"} — ` +
+                `${(file.size / 1_000).toFixed(0)}KB (recommended max 500KB). Auto-resize will generate optimized sizes.`
+            );
+          }
+        }
+        return {
+          ...data,
+          fileSizeKB: file?.size ? Math.round(file.size / 1000) : data?.fileSizeKB,
+        };
+      },
+    ],
   },
   fields: [
     {
@@ -66,6 +96,16 @@ export const Media: CollectionConfig = {
       name: "focalPoint",
       type: "point",
       label: "Focal Point",
+    },
+    {
+      name: "fileSizeKB",
+      type: "number",
+      label: "File Size (KB)",
+      admin: {
+        readOnly: true,
+        description: "Auto-filled on upload. Keep under 500KB for best performance.",
+        position: "sidebar",
+      },
     },
   ],
 };
