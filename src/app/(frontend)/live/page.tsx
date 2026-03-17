@@ -11,7 +11,7 @@ export default async function LivePage() {
     <>
       <PageHero title="Live TV / Live Updates" description="ब्रेकिंग इवेंट्स, चुनाव, खेल और बड़े घटनाक्रम पर रियल-टाइम अपडेट्स।" />
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="bg-black text-white rounded-xl aspect-video flex items-center justify-center font-hindi mb-8">Live Stream Placeholder</div>
+        <div className="bg-black text-white rounded-xl aspect-video flex items-center justify-center font-hindi mb-8">लाइव स्ट्रीम अभी उपलब्ध नहीं है। सक्रिय होने पर यहाँ स्वतः दिखाई देगी।</div>
         <h2 className="font-hindi text-xl font-bold mb-4">सक्रिय लाइव ब्लॉग</h2>
         <div className="space-y-3">
           {liveBlogs.docs.length ? liveBlogs.docs.map((blog: any) => (

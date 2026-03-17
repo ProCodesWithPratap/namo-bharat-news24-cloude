@@ -1,11 +1,11 @@
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
 
 export const socialLinks = {
-  facebook: "https://facebook.com/namobharatnews24",
-  instagram: "https://instagram.com/namobharatnews24",
-  youtube: "https://youtube.com/@namobharatnews24",
-  whatsapp: "https://whatsapp.com/channel/0029VaPlaceholder",
-  x: "https://x.com/namobharatnews24",
+  facebook: process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK || "https://facebook.com/namobharatnews24",
+  instagram: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM || "https://instagram.com/namobharatnews24",
+  youtube: process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE || "https://youtube.com/@namobharatnews24",
+  whatsapp: process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP || "",
+  x: process.env.NEXT_PUBLIC_SOCIAL_X || "https://x.com/namobharatnews24",
 };
 
 export const topUtilityLinks = [
@@ -18,8 +18,8 @@ export const topUtilityLinks = [
 export const footerQuickLinks = [
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
-  { href: "/privacy-policy", label: "Privacy Policy" },
-  { href: "/terms-conditions", label: "Terms & Conditions" },
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/terms", label: "Terms & Conditions" },
   { href: "/disclaimer", label: "Disclaimer" },
   { href: "/advertise", label: "Advertise With Us" },
 ];
@@ -30,7 +30,7 @@ export const footerSocialItems = [
   { key: "instagram", label: "Instagram", href: socialLinks.instagram },
   { key: "youtube", label: "YouTube", href: socialLinks.youtube },
   { key: "whatsapp", label: "WhatsApp", href: socialLinks.whatsapp },
-];
+].filter((item) => Boolean(item.href));
 
 export const newsroomMeta = {
   contactEmail: "desk@namobharatnews24.com",

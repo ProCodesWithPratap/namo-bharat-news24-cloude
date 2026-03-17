@@ -18,6 +18,7 @@ interface HomePageProps {
 export default function HomePage({ featuredArticles, latestArticles, categoryFeeds, videos, webStories, trendingArticles }: HomePageProps) {
   const hero = featuredArticles[0];
   const topStories = featuredArticles.slice(1, 5);
+  const hasAnyNews = featuredArticles.length > 0 || latestArticles.length > 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -25,9 +26,17 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
         <div className="lg:col-span-2">{hero && <NewsCard article={hero} variant="hero" priority />}</div>
         <div className="flex flex-col gap-3">
           <SectionHeader title="टॉप न्यूज़" href="/national" />
-          {topStories.map((a) => <NewsCard key={a.id} article={a} variant="horizontal" />)}
+          {topStories.length > 0 ? topStories.map((a) => <NewsCard key={a.id} article={a} variant="horizontal" />) : (
+            <p className="text-sm font-hindi text-gray-500">टॉप न्यूज़ जल्द अपडेट होगी।</p>
+          )}
         </div>
       </section>
+
+      {!hasAnyNews && (
+        <div className="mb-8 rounded-lg border border-dashed border-gray-300 bg-white p-6 text-center font-hindi text-gray-600">
+          न्यूज़रूम कंटेंट अपडेट हो रहा है। कृपया कुछ देर बाद दोबारा देखें।
+        </div>
+      )}
 
       <div className="mb-8">
         <AdSlot label="Advertisement" width={970} height={90} className="hidden md:flex" />
@@ -68,6 +77,7 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
                   </Link>
                 </li>
               ))}
+              {trendingArticles.length === 0 && <li className="py-2 text-sm font-hindi text-gray-500">ट्रेंडिंग अपडेट उपलब्ध नहीं हैं।</li>}
             </ol>
           </div>
 
@@ -76,6 +86,7 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
           <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
             <h3 className="font-hindi text-base font-extrabold mb-4 border-l-4 pl-3" style={{ borderColor: "#C8102E", color: "#111" }}>सबसे नई खबरें</h3>
             <div className="space-y-0">{latestArticles.slice(6, 16).map((a) => <NewsCard key={a.id} article={a} variant="mini" />)}</div>
+            {latestArticles.length === 0 && <p className="text-sm font-hindi text-gray-500">अभी कोई खबर प्रकाशित नहीं है।</p>}
           </div>
         </aside>
       </div>

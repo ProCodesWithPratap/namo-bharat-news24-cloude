@@ -7,7 +7,6 @@ import {
   getVideos,
   getWebStories,
 } from "@/lib/api";
-import { mockArticles, getMockCategoryFeed } from "@/lib/mock-data";
 import { NAV_CATEGORIES, SITE_DESCRIPTION } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -35,23 +34,16 @@ export default async function Home() {
     latestDocs = latest.docs;
     videoDocs = videos.docs;
     webStoryDocs = webStories.docs;
-  } catch {
-    // Handled with fallback data below.
-  }
+  } catch {}
 
-  const hasApiData = featuredDocs.length > 0 || latestDocs.length > 0;
-  const featuredArticles = featuredDocs.length ? featuredDocs : mockArticles.slice(0, 8);
-  const latestArticles = latestDocs.length ? latestDocs : mockArticles;
+  const featuredArticles = featuredDocs;
+  const latestArticles = latestDocs;
 
   const categoryFeeds: Record<string, any[]> = {};
   await Promise.all(
     NAV_CATEGORIES.slice(0, 8).map(async (cat) => {
-      if (hasApiData) {
-        const result = await getCategoryArticles(cat.slug, 4).catch(() => ({ docs: [] }));
-        categoryFeeds[cat.slug] = result.docs.length ? result.docs : getMockCategoryFeed(cat.slug);
-        return;
-      }
-      categoryFeeds[cat.slug] = getMockCategoryFeed(cat.slug);
+      const result = await getCategoryArticles(cat.slug, 4).catch(() => ({ docs: [] }));
+      categoryFeeds[cat.slug] = result.docs;
     })
   );
 

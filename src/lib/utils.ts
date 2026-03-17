@@ -24,6 +24,18 @@ export const NAV_CATEGORIES = [
   { name: "जीवन-शैली", nameEn: "Lifestyle", slug: "lifestyle" },
 ];
 
+export const CATEGORY_SLUG_ALIASES: Record<string, string> = {
+  state: "states",
+  tech: "technology",
+  "tech-news": "technology",
+  "education-news": "education",
+  "life-style": "lifestyle",
+};
+
+export function normalizeCategorySlug(slug: string): string {
+  return CATEGORY_SLUG_ALIASES[slug] || slug;
+}
+
 export const STATES = [
   "उत्तर प्रदेश", "बिहार", "झारखंड", "मध्य प्रदेश", "राजस्थान",
   "महाराष्ट्र", "दिल्ली", "हरियाणा", "पंजाब", "गुजरात",

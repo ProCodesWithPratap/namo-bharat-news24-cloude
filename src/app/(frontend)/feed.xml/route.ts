@@ -20,7 +20,7 @@ export async function GET() {
       <description><![CDATA[${desc}]]></description>
       <pubDate>${new Date(a.publishDate || a.updatedAt).toUTCString()}</pubDate>
       ${a.category ? `<category><![CDATA[${a.category.nameHindi || a.category.name}]]></category>` : ""}
-      ${img ? `<enclosure url="${img}" type="image/jpeg"/>` : ""}
+      ${img ? `<enclosure url="${img.startsWith("http") ? img : `${SITE_URL}${img}`}" type="image/jpeg"/>` : ""}
     </item>`;
     })
     .join("");
@@ -33,11 +33,6 @@ export async function GET() {
     <description>${SITE_DESCRIPTION}</description>
     <language>hi</language>
     <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml"/>
-    <image>
-      <url>${SITE_URL}/logo.png</url>
-      <title>${SITE_NAME}</title>
-      <link>${SITE_URL}</link>
-    </image>
     ${items}
   </channel>
 </rss>`;
