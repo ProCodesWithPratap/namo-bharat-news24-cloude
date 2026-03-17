@@ -32,6 +32,10 @@ const nextConfig = {
       { source: "/state", destination: "/states", permanent: true },
       { source: "/tech", destination: "/technology", permanent: true },
       { source: "/life-style", destination: "/lifestyle", permanent: true },
+      { source: "/articles/:slug", destination: "/article/:slug", permanent: true },
+      { source: "/category/:category", destination: "/:category", permanent: true },
+      { source: "/authors/:slug", destination: "/author/:slug", permanent: true },
+      { source: "/tags/:tag", destination: "/tag/:tag", permanent: true },
     ];
   },
 };

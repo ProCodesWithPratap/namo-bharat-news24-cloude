@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
-import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/utils";
+import { SITE_NAME, SITE_DESCRIPTION, SITE_URL, toAbsoluteUrl } from "@/lib/utils";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     locale: "hi_IN",
     url: SITE_URL,
     siteName: SITE_NAME,
-    images: [{ url: "/og-default.jpg", width: 1200, height: 630 }],
+    images: [{ url: toAbsoluteUrl("/favicon.svg"), width: 512, height: 512 }],
   },
   twitter: {
     card: "summary_large_image",

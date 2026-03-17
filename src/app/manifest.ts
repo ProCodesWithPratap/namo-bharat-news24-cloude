@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/utils";
+import { SITE_NAME, SITE_DESCRIPTION } from "@/lib/utils";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -12,7 +12,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#C8102E",
     icons: [
       {
-        src: `${SITE_URL}/favicon.svg`,
+        src: "/favicon.svg",
         sizes: "any",
         type: "image/svg+xml",
       },
