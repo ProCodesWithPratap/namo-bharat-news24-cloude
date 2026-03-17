@@ -108,7 +108,7 @@ export default function NewsAssistant() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-4 right-3 z-[120] flex items-center gap-2 rounded-full border border-white/50 bg-gradient-to-br from-[#8f0b1f] via-[#C8102E] to-[#ef3d57] px-4 py-2.5 text-white shadow-[0_16px_40px_rgba(200,16,46,0.45)] ring-1 ring-red-200/40 transition hover:scale-[1.02] md:bottom-6 md:right-6"
+        className="ai-desk-button fixed bottom-4 right-3 z-[120] flex items-center gap-2 rounded-full border border-white/50 bg-gradient-to-br from-[#8f0b1f] via-[#C8102E] to-[#ef3d57] px-4 py-2.5 text-white shadow-[0_16px_40px_rgba(200,16,46,0.45)] ring-1 ring-red-200/40 transition hover:scale-[1.02] md:bottom-6 md:right-6"
       >
         <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">AI</span>
         <span className="font-hindi text-sm font-bold">AI News Desk</span>

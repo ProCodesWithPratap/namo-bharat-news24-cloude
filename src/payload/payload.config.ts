@@ -18,6 +18,9 @@ import { Videos } from "./collections/Videos";
 import { LiveBlogs } from "./collections/LiveBlogs";
 import { WebStories } from "./collections/WebStories";
 import { Ads } from "./collections/Ads";
+import { SiteSettings } from "./globals/SiteSettings";
+import { HomepageSettings } from "./globals/HomepageSettings";
+import { AssistantSettings } from "./globals/AssistantSettings";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -66,6 +69,7 @@ export default buildConfig({
     WebStories,
     Ads,
   ],
+  globals: [SiteSettings, HomepageSettings, AssistantSettings],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [...defaultFeatures],
   }),
