@@ -12,6 +12,17 @@ import { NAV_CATEGORIES, SITE_DESCRIPTION } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+
+function validArticles(docs: any[]): any[] {
+  return (docs || []).filter(
+    (a) =>
+      a &&
+      typeof (a.slug || a.id) === "string" &&
+      (a.slug || a.id).trim() !== "" &&
+      (a.slug || a.id) !== "undefined"
+  );
+}
+
 export const metadata: Metadata = {
   title: "नमो: भारत न्यूज़ 24 - ताजा हिंदी खबरें, ब्रेकिंग न्यूज़",
   description: SITE_DESCRIPTION,
@@ -30,8 +41,8 @@ export default async function Home() {
       getVideos(8),
       getWebStories(8),
     ]);
-    featuredDocs = featured.docs;
-    latestDocs = latest.docs;
+    featuredDocs = validArticles(featured.docs);
+    latestDocs = validArticles(latest.docs);
     videoDocs = videos.docs;
     webStoryDocs = webStories.docs;
   } catch {}
@@ -43,7 +54,7 @@ export default async function Home() {
   await Promise.all(
     NAV_CATEGORIES.slice(0, 8).map(async (cat) => {
       const result = await getCategoryArticles(cat.slug, 4).catch(() => ({ docs: [] }));
-      categoryFeeds[cat.slug] = result.docs;
+      categoryFeeds[cat.slug] = validArticles(result.docs);
     })
   );
 

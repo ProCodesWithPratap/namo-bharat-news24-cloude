@@ -12,8 +12,12 @@ export default function NewsCard({ article, variant = "card", priority = false }
   if (!article) return null;
 
   const title = article.headlineHindi || article.headline || "";
-  const slug = article.slug || article.id || "";
-  if (!slug) return null;
+  const slug = typeof article.slug === "string" && article.slug.trim()
+    ? article.slug.trim()
+    : typeof article.id === "string" && article.id.trim()
+    ? article.id.trim()
+    : null;
+  if (!slug || !title) return null;
   const imgUrl = getImageUrl(article.heroMedia, variant === "hero" ? "hero" : "card");
   const catName = article.category?.nameHindi || article.category?.name || "";
   const time = timeAgo(article.publishDate || article.updatedAt);

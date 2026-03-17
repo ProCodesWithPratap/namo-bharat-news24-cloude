@@ -505,3 +505,54 @@
     grid-template-columns: 1fr;
   }
 }
+
+.nbn-qs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.nbn-qs__card {
+  background: #fff;
+  border: 1px solid #e2e8f1;
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+}
+
+.nbn-qs__card span {
+  color: #5a6270;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+}
+
+.nbn-qs__card strong {
+  display: block;
+  margin-top: 0.4rem;
+  color: #121721;
+  font-size: 1.35rem;
+}
+
+.nbn-qs__card--published {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.nbn-qs__card--drafts {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.nbn-qs__card--breaking {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+@media (max-width: 768px) {
+  .template-login .login__brand { min-width: unset; width: 100%; }
+  .template-login .login__form { min-width: unset; width: 100%; }
+  .nbn-dashboard__grid { grid-template-columns: repeat(2, 1fr); }
+  .nbn-qs { grid-template-columns: repeat(2, 1fr); }
+}

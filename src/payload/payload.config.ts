@@ -42,6 +42,8 @@ if (isProduction && !databaseURI) {
 export default buildConfig({
   serverURL,
   secret: payloadSecret || "dev-only-secret",
+  // @ts-expect-error Payload CSS path is configured here for admin theme overrides.
+  css: path.resolve(dirname, "admin/styles/admin-theme.css"),
   admin: {
     user: Users.slug,
     meta: {
@@ -53,7 +55,10 @@ export default buildConfig({
         Logo: "@/payload/admin/components/BrandLogo#default",
       },
       beforeLogin: ["@/payload/admin/components/LoginIntro#default"],
-      beforeDashboard: ["@/payload/admin/components/DashboardStats#default"],
+      beforeDashboard: [
+        "@/payload/admin/components/QuickStats#default",
+        "@/payload/admin/components/DashboardStats#default",
+      ],
     },
   },
   collections: [

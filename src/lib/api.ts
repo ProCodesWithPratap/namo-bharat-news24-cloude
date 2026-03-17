@@ -255,8 +255,10 @@ export function formatDate(dateStr: string, lang: "hi" | "en" = "en"): string {
 }
 
 export function timeAgo(dateStr: string): string {
+  if (!dateStr) return "";
   const now = Date.now();
   const then = new Date(dateStr).getTime();
+  if (isNaN(then)) return "";
   const diff = now - then;
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
