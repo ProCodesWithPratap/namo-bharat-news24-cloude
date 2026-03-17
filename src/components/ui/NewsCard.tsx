@@ -12,7 +12,8 @@ export default function NewsCard({ article, variant = "card", priority = false }
   if (!article) return null;
 
   const title = article.headlineHindi || article.headline || "";
-  const slug = article.slug;
+  const slug = article.slug || article.id || "";
+  if (!slug) return null;
   const imgUrl = getImageUrl(article.heroMedia, variant === "hero" ? "hero" : "card");
   const catName = article.category?.nameHindi || article.category?.name || "";
   const time = timeAgo(article.publishDate || article.updatedAt);
@@ -22,7 +23,7 @@ export default function NewsCard({ article, variant = "card", priority = false }
     return (
       <Link href={`/article/${slug}`} className="group flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
         <div className="relative w-16 h-16 shrink-0 overflow-hidden rounded bg-gray-100">
-          {article.heroMedia && <Image src={imgUrl} alt={title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />}
+          {article.heroMedia && <Image src={imgUrl} alt={title} fill sizes="(max-width: 768px) 96px, 128px" className="object-cover group-hover:scale-105 transition-transform duration-300" />}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold font-hindi leading-snug text-gray-800 group-hover:text-primary line-clamp-2 transition-colors">{title}</p>
@@ -36,7 +37,7 @@ export default function NewsCard({ article, variant = "card", priority = false }
     return (
       <Link href={`/article/${slug}`} className="group flex gap-4 news-card">
         <div className="relative w-32 md:w-40 shrink-0 aspect-video overflow-hidden rounded bg-gray-100">
-          {article.heroMedia && <Image src={imgUrl} alt={title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />}
+          {article.heroMedia && <Image src={imgUrl} alt={title} fill sizes="(max-width: 768px) 96px, 128px" className="object-cover group-hover:scale-105 transition-transform duration-300" />}
         </div>
         <div className="flex-1 min-w-0 py-1">
           {catName && <span className="cat-badge mb-2 inline-block" style={{ fontSize: "0.65rem" }}>{catName}</span>}
@@ -51,7 +52,7 @@ export default function NewsCard({ article, variant = "card", priority = false }
     return (
       <Link href={`/article/${slug}`} className="group block news-card">
         <div className="relative aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-          {article.heroMedia && <Image src={imgUrl} alt={title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" priority={priority} />}
+          {article.heroMedia && <Image src={imgUrl} alt={title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-300" priority={priority} />}
         </div>
         {catName && <span className="cat-badge mb-1 inline-block">{catName}</span>}
         <h3 className="font-hindi text-sm font-semibold leading-snug text-gray-800 group-hover:text-primary line-clamp-2 transition-colors">{title}</h3>
@@ -64,7 +65,7 @@ export default function NewsCard({ article, variant = "card", priority = false }
     return (
       <Link href={`/article/${slug}`} className="group block relative overflow-hidden rounded-lg news-card">
         <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-gray-200">
-          {article.heroMedia && <Image src={imgUrl} alt={title} fill className="object-cover group-hover:scale-103 transition-transform duration-500" priority={priority} />}
+          {article.heroMedia && <Image src={imgUrl} alt={title} fill sizes="100vw" className="object-cover group-hover:scale-103 transition-transform duration-500" priority={priority} />}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8">
@@ -80,7 +81,7 @@ export default function NewsCard({ article, variant = "card", priority = false }
   return (
     <Link href={`/article/${slug}`} className="group block news-card rounded-lg overflow-hidden bg-white border border-gray-100">
       <div className="relative aspect-video overflow-hidden bg-gray-100">
-        {article.heroMedia && <Image src={imgUrl} alt={title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" priority={priority} />}
+        {article.heroMedia && <Image src={imgUrl} alt={title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-300" priority={priority} />}
       </div>
       <div className="p-3">
         {catName && <span className="cat-badge mb-2 inline-block">{catName}</span>}

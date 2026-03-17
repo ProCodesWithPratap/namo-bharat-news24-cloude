@@ -26,15 +26,20 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
         <div className="lg:col-span-2">{hero && <NewsCard article={hero} variant="hero" priority />}</div>
         <div className="flex flex-col gap-3">
           <SectionHeader title="टॉप न्यूज़" href="/national" />
-          {topStories.length > 0 ? topStories.map((a) => <NewsCard key={a.id} article={a} variant="horizontal" />) : (
-            <p className="text-sm font-hindi text-gray-500">टॉप न्यूज़ जल्द अपडेट होगी।</p>
+          {topStories.length > 0 ? (
+            topStories.map((a) => <NewsCard key={a.id} article={a} variant="horizontal" />)
+          ) : (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+              <p className="text-sm font-hindi text-gray-600">टॉप न्यूज़ जल्द अपडेट होगी।</p>
+            </div>
           )}
         </div>
       </section>
 
       {!hasAnyNews && (
-        <div className="mb-8 rounded-lg border border-dashed border-gray-300 bg-white p-6 text-center font-hindi text-gray-600">
-          न्यूज़रूम कंटेंट अपडेट हो रहा है। कृपया कुछ देर बाद दोबारा देखें।
+        <div className="mb-8 rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center font-hindi text-gray-600">
+          <p className="text-lg font-bold mb-2">न्यूज़रूम अपडेट जारी है</p>
+          <p className="text-sm">कृपया कुछ देर बाद दोबारा देखें। ताज़ा खबरें जल्द उपलब्ध होंगी।</p>
         </div>
       )}
 
@@ -66,6 +71,12 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
         </div>
 
         <aside className="space-y-6">
+          <div className="rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 p-4 text-white shadow-lg">
+            <h3 className="font-hindi text-lg font-extrabold">व्हाट्सऐप चैनल जॉइन करें</h3>
+            <p className="font-hindi text-sm text-green-50 mt-1">ब्रेकिंग न्यूज़ और बड़ी खबरें सबसे पहले सीधे WhatsApp पर पाएं।</p>
+            <a href="https://whatsapp.com/channel/0029VbCBrGu6hENlyE9rvW3N" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex px-4 py-2 rounded-lg bg-white text-green-700 font-hindi font-bold hover:bg-green-50 transition-colors">चैनल से जुड़ें</a>
+          </div>
+
           <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
             <h3 className="font-hindi text-base font-extrabold mb-4 border-l-4 pl-3" style={{ borderColor: "#C8102E", color: "#111" }}>🔥 ट्रेंडिंग</h3>
             <ol className="space-y-0 divide-y divide-gray-100">
@@ -77,7 +88,7 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
                   </Link>
                 </li>
               ))}
-              {trendingArticles.length === 0 && <li className="py-2 text-sm font-hindi text-gray-500">ट्रेंडिंग अपडेट उपलब्ध नहीं हैं।</li>}
+              {trendingArticles.length === 0 && <li className="py-6 text-sm font-hindi text-gray-500 text-center">ट्रेंडिंग अपडेट उपलब्ध नहीं हैं।</li>}
             </ol>
           </div>
 
@@ -86,7 +97,7 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
           <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
             <h3 className="font-hindi text-base font-extrabold mb-4 border-l-4 pl-3" style={{ borderColor: "#C8102E", color: "#111" }}>सबसे नई खबरें</h3>
             <div className="space-y-0">{latestArticles.slice(6, 16).map((a) => <NewsCard key={a.id} article={a} variant="mini" />)}</div>
-            {latestArticles.length === 0 && <p className="text-sm font-hindi text-gray-500">अभी कोई खबर प्रकाशित नहीं है।</p>}
+            {latestArticles.length === 0 && <p className="text-sm font-hindi text-gray-500 text-center py-6">अभी कोई खबर प्रकाशित नहीं है।</p>}
           </div>
         </aside>
       </div>
@@ -98,7 +109,10 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
             {videos.slice(0, 4).map((v) => (
               <Link key={v.id} href={`/video/${v.slug}`} className="group block news-card rounded-lg overflow-hidden bg-white border border-gray-100">
                 <div className="relative aspect-video bg-gray-200 overflow-hidden">
-                  {v.thumbnail && <Image src={getImageUrl(v.thumbnail, "card")} alt={v.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />}
+                  {v.thumbnail && <Image src={getImageUrl(v.thumbnail, "card")} alt={v.title} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-300" />}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center text-sm">▶</span>
+                  </div>
                 </div>
                 <div className="p-3"><h3 className="font-hindi text-sm font-semibold text-gray-800 group-hover:text-primary line-clamp-2 transition-colors">{v.titleHindi || v.title}</h3></div>
               </Link>
@@ -114,13 +128,28 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
             {webStories.map((s) => (
               <Link key={s.id} href={`/web-stories/${s.slug}`} className="group shrink-0 w-28 md:w-36 block">
                 <div className="relative h-48 md:h-64 rounded-xl overflow-hidden bg-gray-200 shadow-md">
-                  {s.coverImage && <Image src={getImageUrl(s.coverImage, "thumbnail")} alt={s.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />}
+                  {s.coverImage && <Image src={getImageUrl(s.coverImage, "thumbnail")} alt={s.title} fill sizes="(max-width: 768px) 112px, 144px" className="object-cover group-hover:scale-105 transition-transform duration-300" />}
                 </div>
               </Link>
             ))}
           </div>
         </section>
       )}
+
+      <section className="mt-12 bg-gray-900 rounded-2xl p-6 md:p-8 text-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h3 className="font-hindi text-xl font-extrabold">हमसे सोशल मीडिया पर जुड़ें</h3>
+            <p className="font-hindi text-sm text-gray-300 mt-1">ताज़ा खबरें, वीडियो और एक्सक्लूसिव अपडेट सबसे पहले पाएं।</p>
+          </div>
+          <div className="flex flex-wrap gap-2 font-hindi">
+            <a href="#" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700">फ़ेसबुक</a>
+            <a href="#" className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700">यूट्यूब</a>
+            <a href="#" className="px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-700">इंस्टाग्राम</a>
+            <a href="https://whatsapp.com/channel/0029VbCBrGu6hENlyE9rvW3N" target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700">व्हाट्सऐप चैनल जॉइन</a>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

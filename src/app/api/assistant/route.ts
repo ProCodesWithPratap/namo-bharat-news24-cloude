@@ -266,21 +266,45 @@ function removeRawUrls(text: string): string {
 }
 
 function extractResponseText(payload: any): string {
-  if (typeof payload?.output_text === "string" && payload.output_text.trim()) return payload.output_text.trim();
-  if (Array.isArray(payload?.output)) {
-    const parts: string[] = [];
-    for (const item of payload.output) {
-      if (!Array.isArray(item?.content)) continue;
-      for (const content of item.content) {
-        if (content?.type === "output_text" && typeof content?.text === "string") {
-          parts.push(content.text);
-        }
-      }
-    }
-    const merged = parts.join(" ").trim();
-    if (merged) return merged;
-  }
-  return "";
+  return payload?.choices?.[0]?.message?.content?.trim?.() || "";
+}
+
+function extractAnthropicText(payload: any): string {
+  if (!Array.isArray(payload?.content)) return "";
+  return payload.content.find((item: any) => item?.type === "text")?.text?.trim?.() || "";
+}
+
+async function requestAnthropicReply({
+  apiKey,
+  systemPrompt,
+  history,
+  message,
+}: {
+  apiKey: string;
+  systemPrompt: string;
+  history: ChatHistoryItem[];
+  message: string;
+}) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 500,
+      system: systemPrompt,
+      messages: [...history, { role: "user", content: message }],
+    }),
+  });
+
+  if (!response.ok) throw new Error("anthropic-unavailable");
+  const payload = await response.json();
+  const reply = extractAnthropicText(payload);
+  if (!reply) throw new Error("empty-anthropic-reply");
+  return reply;
 }
 
 async function requestOpenAIReply({
@@ -296,22 +320,13 @@ async function requestOpenAIReply({
   history: ChatHistoryItem[];
   message: string;
 }) {
-  const input = [
-    {
-      role: "system",
-      content: [{ type: "input_text", text: systemPrompt }],
-    },
-    ...history.map((item) => ({
-      role: item.role,
-      content: [{ type: "input_text", text: item.content }],
-    })),
-    {
-      role: "user",
-      content: [{ type: "input_text", text: message }],
-    },
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...history,
+    { role: "user", content: message },
   ];
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -319,9 +334,9 @@ async function requestOpenAIReply({
     },
     body: JSON.stringify({
       model,
-      input,
+      messages,
       temperature: 0.2,
-      max_output_tokens: 450,
+      max_tokens: 450,
     }),
   });
 
@@ -345,16 +360,26 @@ export async function POST(req: Request) {
     const context = await buildNewsContext();
     const suggestions = pickSuggestions(message, context);
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
+    const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+    const openAIApiKey = process.env.OPENAI_API_KEY;
+    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    const systemPrompt = createSystemPrompt(context);
+
+    if (anthropicApiKey) {
+      try {
+        const reply = await requestAnthropicReply({ apiKey: anthropicApiKey, systemPrompt, history, message });
+        return Response.json({ reply: removeRawUrls(reply), articles: suggestions, source: "anthropic" });
+      } catch {
+        if (!openAIApiKey) return Response.json(buildFallbackReply(message, suggestions, context.categoryList));
+      }
+    }
+
+    if (!openAIApiKey) {
       return Response.json(buildFallbackReply(message, suggestions, context.categoryList, "no-context"));
     }
 
-    const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
-    const systemPrompt = createSystemPrompt(context);
-
     try {
-      const reply = await requestOpenAIReply({ apiKey, model, systemPrompt, history, message });
+      const reply = await requestOpenAIReply({ apiKey: openAIApiKey, model, systemPrompt, history, message });
       return Response.json({ reply: removeRawUrls(reply), articles: suggestions, source: "openai" });
     } catch {
       return Response.json(buildFallbackReply(message, suggestions, context.categoryList));
