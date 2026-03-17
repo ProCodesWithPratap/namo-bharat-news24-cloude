@@ -25,6 +25,7 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
+  const [indiaDateTime, setIndiaDateTime] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -37,6 +38,23 @@ export default function Header() {
     if (searchOpen) searchRef.current?.focus();
   }, [searchOpen]);
 
+  useEffect(() => {
+    const formatter = new Intl.DateTimeFormat("hi-IN", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Kolkata",
+    });
+
+    const updateDateTime = () => setIndiaDateTime(formatter.format(new Date()));
+    updateDateTime();
+    const interval = setInterval(updateDateTime, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
@@ -46,7 +64,7 @@ export default function Header() {
     <>
       <div className="bg-[#111] text-white text-xs py-1.5 hidden md:block">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
-          <span className="font-hindi text-gray-400">{new Date().toLocaleDateString("hi-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+          <span className="font-hindi text-gray-400">{indiaDateTime || "भारत समय"}</span>
           <div className="flex items-center gap-4">
             {topUtilityLinks.map((link) => (
               <Link key={link.href} href={link.href} className={`hover:text-white transition-colors ${link.hindi ? "font-hindi" : ""}`}>{link.label}</Link>

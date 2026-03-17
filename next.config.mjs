@@ -23,7 +23,16 @@ const nextConfig = {
     ];
   },
   async redirects() {
-    return [];
+    return [
+      { source: "/about-us", destination: "/about", permanent: true },
+      { source: "/contact-us", destination: "/contact", permanent: true },
+      { source: "/privacy-policy", destination: "/privacy", permanent: true },
+      { source: "/terms-conditions", destination: "/terms", permanent: true },
+      { source: "/epaper", destination: "/e-paper", permanent: true },
+      { source: "/state", destination: "/states", permanent: true },
+      { source: "/tech", destination: "/technology", permanent: true },
+      { source: "/life-style", destination: "/lifestyle", permanent: true },
+    ];
   },
 };
 

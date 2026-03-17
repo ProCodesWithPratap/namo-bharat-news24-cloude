@@ -21,16 +21,21 @@ async function fetchPayload<T>(
   options?: RequestInit
 ): Promise<T> {
   const endpoint = API ? `${API}/api${path}` : `/api${path}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
     const res = await fetch(endpoint, {
       headers: { "Content-Type": "application/json" },
       next: { revalidate: 60 },
+      signal: controller.signal,
       ...options,
     });
+    clearTimeout(timeout);
     if (!res.ok) return { docs: [], totalDocs: 0, totalPages: 0 } as T;
     return res.json();
   } catch (e) {
+    clearTimeout(timeout);
     return { docs: [], totalDocs: 0, totalPages: 0 } as T;
   }
 }
@@ -204,10 +209,10 @@ export async function getAdsByPlacement(placement: string) {
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 export function getImageUrl(media: any, size?: string): string {
-  if (!media) return "/placeholder.jpg";
+  if (!media) return "";
   if (typeof media === "string") return media;
   if (size && media.sizes?.[size]?.url) return media.sizes[size].url;
-  return media.url || "/placeholder.jpg";
+  return media.url || "";
 }
 
 export function getExcerpt(article: any, maxLen = 160): string {
