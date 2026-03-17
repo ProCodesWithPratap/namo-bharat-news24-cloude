@@ -15,7 +15,9 @@ export default function Footer() {
             <span className="font-ui text-xl font-extrabold ml-1" style={{ color: "#C8102E" }}>24</span>
           </Link>
           <p className="text-sm font-hindi text-gray-500 leading-relaxed">{newsroomMeta.about}</p>
-          {newsroomMeta.address ? <p className="text-xs mt-3">{newsroomMeta.address}</p> : null}
+          <p className="text-xs mt-2 font-hindi text-gray-500">“तथ्य स्पष्ट, विचार निष्पक्ष।”</p>
+          <p className="text-xs mt-2 font-hindi text-gray-500">{newsroomMeta.valueStatement}</p>
+          {newsroomMeta.address ? <p className="text-xs mt-3 font-hindi">पता: {newsroomMeta.address}</p> : null}
           {newsroomMeta.contactEmail ? <p className="text-xs">Email: {newsroomMeta.contactEmail}</p> : null}
         </div>
 
@@ -29,7 +31,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="text-white font-bold text-sm mb-4">Trust & Company</h4>
+          <h4 className="text-white font-bold text-sm mb-4 font-hindi">ज़रूरी लिंक</h4>
           <ul className="space-y-2 text-sm">
             {footerQuickLinks.map((l) => (
               <li key={l.href}><Link href={l.href} className="hover:text-white transition-colors">{l.label}</Link></li>
@@ -38,7 +40,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="text-white font-bold text-sm mb-4">Follow Us</h4>
+          <h4 className="text-white font-bold text-sm mb-4 font-hindi">हमसे जुड़ें</h4>
           <ul className="space-y-2 text-sm">
             {footerSocialItems.map((item) => (
               <li key={item.key}><a href={item.href} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{item.label}</a></li>
@@ -46,7 +48,9 @@ export default function Footer() {
           </ul>
           <div className="mt-5 text-sm space-y-1">
             {newsroomMeta.editorialEmail ? <p>Editorial: {newsroomMeta.editorialEmail}</p> : null}
-            {newsroomMeta.phone ? <p>Phone: {newsroomMeta.phone}</p> : null}
+            {newsroomMeta.phone ? <p className="font-hindi">फोन: <a href={`tel:${newsroomMeta.phone.replace(/\s+/g, "")}`} className="hover:text-white">{newsroomMeta.phone}</a></p> : null}
+            <p className="font-hindi"><a href="https://whatsapp.com/channel/0029VbCBrGu6hENlyE9rvW3N" target="_blank" rel="noopener noreferrer" className="hover:text-white">WhatsApp Channel</a></p>
+            <p className="font-hindi text-gray-500">{newsroomMeta.joinMessage}</p>
           </div>
         </div>
       </div>

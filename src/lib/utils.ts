@@ -7,10 +7,10 @@ export function cn(...inputs: ClassValue[]) {
 
 export const SITE_NAME = "नमो: भारत न्यूज़ 24";
 export const SITE_NAME_EN = "Namo Bharat News 24";
-export const SITE_TAGLINE = "सच्ची खबर, हर पल";
+export const SITE_TAGLINE = "तथ्य स्पष्ट, विचार निष्पक्ष।";
 export const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 export const SITE_DESCRIPTION =
-  "नमो: भारत न्यूज़ 24 — भारत की ताजा खबरें, ब्रेकिंग न्यूज़, राजनीति, खेल, मनोरंजन, व्यापार और बहुत कुछ।";
+  "भारत और दुनिया की हर महत्वपूर्ण खबर अब पहुँचेगी आपके पास तेज़, सटीक और निष्पक्ष रूप में।";
 
 export const NAV_CATEGORIES = [
   { name: "राष्ट्रीय", nameEn: "National", slug: "national" },
