@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import StaticPageLayout from "@/components/common/StaticPageLayout";
 import { newsroomMeta, socialLinks } from "@/lib/site-config";
 
-export const metadata: Metadata = { title: "विज्ञापन दें", description: "नमो: भारत न्यूज़ 24 पर विज्ञापन दें।" };
+export const metadata: Metadata = {
+  title: "विज्ञापन दें | नमो: भारत न्यूज़ 24",
+  description: "नमो: भारत न्यूज़ 24 पर अपने ब्रांड का विज्ञापन दें। डिस्प्ले बैनर, स्पॉन्सर्ड कंटेंट और वीडियो विज्ञापन पैकेज। बिहार और पूर्वी भारत के लाखों पाठकों तक पहुँचें।",
+  alternates: { canonical: "https://namo-bharat-news24-cloude.vercel.app/advertise" },
+};
 
 export default function AdvertisePage() {
   return (

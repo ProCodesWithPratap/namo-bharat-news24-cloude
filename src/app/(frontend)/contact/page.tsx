@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import StaticPageLayout from "@/components/common/StaticPageLayout";
 import { newsroomMeta, socialLinks } from "@/lib/site-config";
 
-export const metadata: Metadata = { title: "संपर्क", description: "नमो: भारत न्यूज़ 24 से संपर्क करें।" };
+export const metadata: Metadata = {
+  title: "संपर्क | नमो: भारत न्यूज़ 24",
+  description: "नमो: भारत न्यूज़ 24 से संपर्क करें। विज्ञापन, खबर भेजने या किसी भी जानकारी के लिए हमें कॉल, WhatsApp या ईमेल करें। फोन: +91-91628 68368।",
+  alternates: { canonical: "https://namo-bharat-news24-cloude.vercel.app/contact" },
+};
 
 export default function ContactPage() {
   return (

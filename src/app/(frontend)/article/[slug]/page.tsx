@@ -6,6 +6,7 @@ import { getArticleBySlug, getRelatedArticles, getImageUrl, formatDate, timeAgo 
 import NewsCard from "@/components/ui/NewsCard";
 import AdSlot from "@/components/ui/AdSlot";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
+import ArticleAnalytics from "@/components/common/ArticleAnalytics";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
@@ -79,6 +80,7 @@ export default async function ArticlePage({ params }: Props) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <ArticleAnalytics slug={slug} category={catSlug} author={authorList[0]?.name} />
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <article className="lg:col-span-2">

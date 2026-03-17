@@ -41,6 +41,8 @@ export const topUtilityLinks = [
 export const footerQuickLinks = [
   { href: "/about", label: "हमारे बारे में" },
   { href: "/contact", label: "संपर्क" },
+  { href: "/bihar", label: "बिहार खबरें" },
+  { href: "/katihar", label: "कटिहार खबरें" },
   { href: "/privacy", label: "प्राइवेसी पॉलिसी" },
   { href: "/terms", label: "नियम व शर्तें" },
   { href: "/disclaimer", label: "डिस्क्लेमर" },

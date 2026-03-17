@@ -13,6 +13,8 @@ const STATIC_ROUTES = [
   "/disclaimer",
   "/advertise",
   "/careers",
+  "/bihar",
+  "/katihar",
   "/live",
   "/e-paper",
   "/national",

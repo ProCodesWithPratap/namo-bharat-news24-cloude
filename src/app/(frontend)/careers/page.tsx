@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import StaticPageLayout from "@/components/common/StaticPageLayout";
 
 export const metadata: Metadata = {
-  title: "Careers",
-  description: "Namo Bharat News 24 के साथ करियर अवसर।",
+  title: "करियर | नमो: भारत न्यूज़ 24",
+  description: "नमो: भारत न्यूज़ 24 में करियर बनाएं। रिपोर्टिंग, संपादन, वीडियो और डिजिटल मीडिया में अवसर। हिंदी पत्रकारिता में रुचि रखने वालों का स्वागत है।",
+  alternates: { canonical: "https://namo-bharat-news24-cloude.vercel.app/careers" },
 };
 
 export default function CareersPage() {

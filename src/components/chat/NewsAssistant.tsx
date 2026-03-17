@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { trackChatbotOpen, trackChatbotQuery } from "@/lib/analytics";
 
 type ArticleHint = {
   id: string;
@@ -45,14 +46,28 @@ export default function NewsAssistant() {
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [listening, setListening] = useState(false);
+  const [hasSpeechSupport, setHasSpeechSupport] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const history = useMemo(() => messages.slice(-6).map((m) => ({ role: m.role, content: m.content })), [messages]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setHasSpeechSupport(Boolean(SpeechRecognition));
+  }, []);
 
   async function sendMessage(raw: string) {
     const message = raw.trim();
     if (!message || loading) return;
 
     setOpen(true);
+    trackChatbotOpen();
     setError("");
     const userMessage: ChatMessage = { role: "user", content: message };
     const assistantDraft: ChatMessage = { role: "assistant", content: "" };
@@ -60,6 +75,7 @@ export default function NewsAssistant() {
     setMessages((prev) => [...prev, userMessage, assistantDraft]);
     setInput("");
     setLoading(true);
+    trackChatbotQuery(message);
 
     try {
       const response = await fetch("/api/assistant", {
@@ -103,12 +119,40 @@ export default function NewsAssistant() {
     }
   }
 
+  const startListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "hi-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setListening(true);
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results?.[0]?.[0]?.transcript || "";
+      setInput(transcript);
+      setListening(false);
+      setTimeout(() => sendMessage(transcript), 300);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    setListening(false);
+  };
+
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="ai-desk-button fixed bottom-4 right-3 z-[120] flex items-center gap-2 rounded-full border border-white/50 bg-gradient-to-br from-[#8f0b1f] via-[#C8102E] to-[#ef3d57] px-4 py-2.5 text-white shadow-[0_16px_40px_rgba(200,16,46,0.45)] ring-1 ring-red-200/40 transition hover:scale-[1.02] md:bottom-6 md:right-6"
+        className="ai-desk-button fixed bottom-16 right-3 z-[120] flex items-center gap-2 rounded-full border border-white/50 bg-gradient-to-br from-[#8f0b1f] via-[#C8102E] to-[#ef3d57] px-4 py-2.5 text-white shadow-[0_16px_40px_rgba(200,16,46,0.45)] ring-1 ring-red-200/40 transition hover:scale-[1.02] md:bottom-6 md:right-6"
       >
         <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">AI</span>
         <span className="font-hindi text-sm font-bold">AI News Desk</span>
@@ -122,9 +166,12 @@ export default function NewsAssistant() {
         )}
       >
         <div className="overflow-hidden rounded-3xl border border-red-200 bg-white shadow-[0_20px_52px_rgba(15,15,15,0.28)] backdrop-blur">
-          <div className="bg-gradient-to-r from-[#9f0d24] via-[#C8102E] to-[#e3344f] px-4 py-3 text-white">
-            <p className="font-hindi text-sm font-bold">AI News Desk · नमो: भारत न्यूज़ 24</p>
-            <p className="text-xs text-red-100">Hindi-first newsroom assistant</p>
+          <div className="bg-gradient-to-r from-[#9f0d24] via-[#C8102E] to-[#e3344f] px-4 py-3 text-white flex items-center justify-between">
+            <div>
+              <p className="font-hindi text-sm font-bold">AI News Desk · नमो: भारत न्यूज़ 24</p>
+              <p className="text-xs text-red-100">Hindi-first newsroom assistant</p>
+            </div>
+            <button type="button" onClick={() => setOpen(false)} className="text-white/90 hover:text-white text-lg">✕</button>
           </div>
 
           <div className="h-[63vh] max-h-[560px] min-h-[320px] space-y-2 overflow-y-auto bg-gradient-to-b from-white via-white to-red-50/30 p-2 sm:h-[58vh] sm:p-3">
@@ -171,6 +218,7 @@ export default function NewsAssistant() {
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="border-t border-red-100 bg-white px-2.5 pb-2.5 pt-2 sm:px-3 sm:pb-3 sm:pt-2.5">
@@ -206,10 +254,38 @@ export default function NewsAssistant() {
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="खबर पूछें... e.g. आज की बड़ी खबर"
-                className="h-10 flex-1 rounded-xl border border-red-200 bg-red-50/25 px-3 text-sm outline-none transition focus:border-[#C8102E] focus:bg-white"
+                placeholder={listening ? "सुन रहा हूँ…" : "खबर पूछें..."}
+                className={cn(
+                  "h-10 flex-1 rounded-xl border px-3 text-sm outline-none transition",
+                  listening
+                    ? "border-[#C8102E] bg-red-50"
+                    : "border-red-200 bg-red-50/25 focus:border-[#C8102E] focus:bg-white",
+                )}
                 maxLength={1200}
               />
+              {hasSpeechSupport && (
+                <button
+                  type="button"
+                  onClick={listening ? stopListening : startListening}
+                  aria-label={listening ? "रोकें" : "बोलकर पूछें"}
+                  className={cn(
+                    "h-10 w-10 rounded-xl flex items-center justify-center",
+                    listening
+                      ? "bg-[#C8102E] text-white animate-pulse shadow-[0_0_0_4px_rgba(200,16,46,0.2)]"
+                      : "border border-red-200 bg-white text-red-600 hover:bg-red-50",
+                  )}
+                >
+                  {listening ? (
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1" /></svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" />
+                      <path d="M19 11a7 7 0 0 1-14 0" />
+                      <polyline points="12 18 12 21 8 21" />
+                    </svg>
+                  )}
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
