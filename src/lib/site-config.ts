@@ -1,11 +1,24 @@
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
 
+const cleanUrl = (value?: string): string => {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "#") return "";
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
+};
+
 export const socialLinks = {
-  facebook: process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK || "https://facebook.com/namobharatnews24",
-  instagram: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM || "https://instagram.com/namobharatnews24",
-  youtube: process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE || "https://youtube.com/@namobharatnews24",
-  whatsapp: process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP || "",
-  x: process.env.NEXT_PUBLIC_SOCIAL_X || "https://x.com/namobharatnews24",
+  facebook: cleanUrl(process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK),
+  instagram: cleanUrl(process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM),
+  youtube: cleanUrl(process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE),
+  whatsapp: cleanUrl(process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP),
+  x: cleanUrl(process.env.NEXT_PUBLIC_SOCIAL_X),
 };
 
 export const topUtilityLinks = [
@@ -33,10 +46,10 @@ export const footerSocialItems = [
 ].filter((item) => Boolean(item.href));
 
 export const newsroomMeta = {
-  contactEmail: "desk@namobharatnews24.com",
-  editorialEmail: "editor@namobharatnews24.com",
-  phone: "+91-90000-00024",
-  address: "न्यूज़रूम, सेक्टर-62, नोएडा, उत्तर प्रदेश, भारत",
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "",
+  editorialEmail: process.env.NEXT_PUBLIC_EDITORIAL_EMAIL?.trim() || "",
+  phone: process.env.NEXT_PUBLIC_CONTACT_PHONE?.trim() || "",
+  address: process.env.NEXT_PUBLIC_CONTACT_ADDRESS?.trim() || "",
   about: `${SITE_NAME} एक हिंदी डिजिटल न्यूज़ प्लेटफॉर्म है, जो राष्ट्रीय, राज्य, खेल, मनोरंजन और लाइव अपडेट्स को तेज़ और भरोसेमंद रूप में पाठकों तक पहुंचाता है।`,
   copyright: `© ${new Date().getFullYear()} ${SITE_NAME}. All rights reserved.`,
   siteUrl: SITE_URL,

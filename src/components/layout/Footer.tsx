@@ -15,8 +15,8 @@ export default function Footer() {
             <span className="font-ui text-xl font-extrabold ml-1" style={{ color: "#C8102E" }}>24</span>
           </Link>
           <p className="text-sm font-hindi text-gray-500 leading-relaxed">{newsroomMeta.about}</p>
-          <p className="text-xs mt-3">{newsroomMeta.address}</p>
-          <p className="text-xs">Email: {newsroomMeta.contactEmail}</p>
+          {newsroomMeta.address ? <p className="text-xs mt-3">{newsroomMeta.address}</p> : null}
+          {newsroomMeta.contactEmail ? <p className="text-xs">Email: {newsroomMeta.contactEmail}</p> : null}
         </div>
 
         <div>
@@ -45,8 +45,8 @@ export default function Footer() {
             ))}
           </ul>
           <div className="mt-5 text-sm space-y-1">
-            <p>Editorial: {newsroomMeta.editorialEmail}</p>
-            <p>Phone: {newsroomMeta.phone}</p>
+            {newsroomMeta.editorialEmail ? <p>Editorial: {newsroomMeta.editorialEmail}</p> : null}
+            {newsroomMeta.phone ? <p>Phone: {newsroomMeta.phone}</p> : null}
           </div>
         </div>
       </div>

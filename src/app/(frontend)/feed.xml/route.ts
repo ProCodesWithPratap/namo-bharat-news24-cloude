@@ -1,5 +1,5 @@
 import { getLatestArticles, getImageUrl } from "@/lib/api";
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION } from "@/lib/utils";
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, toAbsoluteUrl } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export const revalidate = 300;
@@ -15,12 +15,12 @@ export async function GET() {
       return `
     <item>
       <title><![CDATA[${title}]]></title>
-      <link>${SITE_URL}/article/${a.slug}</link>
-      <guid isPermaLink="true">${SITE_URL}/article/${a.slug}</guid>
+      <link>${toAbsoluteUrl(`/article/${a.slug}`)}</link>
+      <guid isPermaLink="true">${toAbsoluteUrl(`/article/${a.slug}`)}</guid>
       <description><![CDATA[${desc}]]></description>
       <pubDate>${new Date(a.publishDate || a.updatedAt).toUTCString()}</pubDate>
       ${a.category ? `<category><![CDATA[${a.category.nameHindi || a.category.name}]]></category>` : ""}
-      ${img ? `<enclosure url="${img.startsWith("http") ? img : `${SITE_URL}${img}`}" type="image/jpeg"/>` : ""}
+      ${img ? `<enclosure url="${img.startsWith("http") ? img : toAbsoluteUrl(img)}" type="image/jpeg"/>` : ""}
     </item>`;
     })
     .join("");
@@ -32,7 +32,7 @@ export async function GET() {
     <link>${SITE_URL}</link>
     <description>${SITE_DESCRIPTION}</description>
     <language>hi</language>
-    <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml"/>
+    <atom:link href="${toAbsoluteUrl("/feed.xml")}" rel="self" type="application/rss+xml"/>
     ${items}
   </channel>
 </rss>`;

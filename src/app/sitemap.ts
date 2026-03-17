@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/utils";
+import { toAbsoluteUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,7 @@ const STATIC_ROUTES = [
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   return STATIC_ROUTES.map((route, index) => ({
-    url: `${SITE_URL}${route}`,
+    url: toAbsoluteUrl(route),
     lastModified: now,
     changeFrequency: index === 0 ? "always" : "hourly",
     priority: index === 0 ? 1 : 0.7,

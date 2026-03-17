@@ -51,8 +51,18 @@ export default function Header() {
 
     const updateDateTime = () => setIndiaDateTime(formatter.format(new Date()));
     updateDateTime();
-    const interval = setInterval(updateDateTime, 60_000);
-    return () => clearInterval(interval);
+
+    const interval = setInterval(updateDateTime, 15_000);
+    const onVisibility = () => {
+      if (!document.hidden) updateDateTime();
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
