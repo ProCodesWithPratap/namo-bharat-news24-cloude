@@ -24,6 +24,8 @@ export const NAV_CATEGORIES = [
   { name: "जीवन-शैली", nameEn: "Lifestyle", slug: "lifestyle" },
 ];
 
+export const PUBLIC_CATEGORY_ROUTE_SLUGS = NAV_CATEGORIES.map((item) => item.slug);
+
 export const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   state: "states",
   tech: "technology",
