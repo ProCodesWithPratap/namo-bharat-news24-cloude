@@ -101,14 +101,7 @@ export const Articles: CollectionConfig = {
         description:
           "Recommended before publishing. Use a strong lead visual with complete alt text in Media Library.",
       },
-      validate: (value: unknown, { siblingData }: { siblingData?: { status?: string } }) => {
-        const status = siblingData?.status;
-        if (status && ["ready", "published"].includes(status) && !value) {
-          return "Hero media is required before an article can be marked Ready or Published.";
-        }
-
-        return true;
-      },
+      validate: () => true as const,
     },
     {
       name: "heroCaption",

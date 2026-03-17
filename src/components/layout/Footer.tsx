@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { NAV_CATEGORIES } from "@/lib/utils";
-import { footerQuickLinks, footerSocialItems, newsroomMeta } from "@/lib/site-config";
+import { footerQuickLinks, footerSocialItems, newsroomMeta, socialLinks } from "@/lib/site-config";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -49,7 +49,9 @@ export default function Footer() {
           <div className="mt-5 text-sm space-y-1">
             {newsroomMeta.editorialEmail ? <p>Editorial: {newsroomMeta.editorialEmail}</p> : null}
             {newsroomMeta.phone ? <p className="font-hindi">फोन: <a href={`tel:${newsroomMeta.phone.replace(/\s+/g, "")}`} className="hover:text-white">{newsroomMeta.phone}</a></p> : null}
-            <p className="font-hindi"><a href="https://whatsapp.com/channel/0029VbCBrGu6hENlyE9rvW3N" target="_blank" rel="noopener noreferrer" className="hover:text-white">WhatsApp Channel</a></p>
+            {socialLinks.whatsapp ? (
+              <p className="font-hindi"><a href={socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="hover:text-white">WhatsApp Channel</a></p>
+            ) : null}
             <p className="font-hindi text-gray-500">{newsroomMeta.joinMessage}</p>
           </div>
         </div>

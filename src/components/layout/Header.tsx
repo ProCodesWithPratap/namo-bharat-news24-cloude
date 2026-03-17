@@ -22,6 +22,7 @@ const CloseIcon = () => (
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
@@ -46,13 +47,15 @@ export default function Header() {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: true,
+      timeZoneName: "short",
       timeZone: "Asia/Kolkata",
     });
 
     const updateDateTime = () => setIndiaDateTime(formatter.format(new Date()));
     updateDateTime();
 
-    const interval = setInterval(updateDateTime, 15_000);
+    const interval = setInterval(updateDateTime, 60_000);
     const onVisibility = () => {
       if (!document.hidden) updateDateTime();
     };
@@ -97,6 +100,14 @@ export default function Header() {
               </div>
             </Link>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setDesktopMenuOpen((value) => !value)}
+                className="hidden md:inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-[#C8102E] hover:text-[#C8102E]"
+              >
+                <MenuIcon />
+                मेनू
+              </button>
               <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 text-gray-600 hover:text-primary transition-colors rounded-full hover:bg-red-50" aria-label="Search"><SearchIcon /></button>
               <Link href="/live" className="hidden md:flex live-badge text-xs font-bold"><span className="breaking-dot"></span>LIVE</Link>
             </div>
@@ -109,6 +120,25 @@ export default function Header() {
               <input ref={searchRef} type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="खबर खोजें... (Search news)" className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary font-hindi" />
               <button type="submit" className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-600 transition-colors" style={{ backgroundColor: "#C8102E" }}>खोजें</button>
             </form>
+          </div>
+        )}
+
+        {desktopMenuOpen && (
+          <div className="hidden md:block border-t border-gray-100 bg-white/95 backdrop-blur-sm">
+            <div className="max-w-7xl mx-auto px-4 py-3">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                {[...topUtilityLinks, { href: "/contact", label: "संपर्क", hindi: true }, { href: "/careers", label: "Careers", hindi: false }].map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setDesktopMenuOpen(false)}
+                    className={`rounded-lg border border-gray-100 px-3 py-2 text-sm text-gray-700 transition hover:border-red-200 hover:bg-red-50 hover:text-[#C8102E] ${link.hindi ? "font-hindi" : ""}`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

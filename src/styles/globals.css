@@ -177,3 +177,32 @@ a:focus-visible, button:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+
+.ai-desk-button {
+  position: fixed;
+  isolation: isolate;
+  animation: aiDeskFloat 3s ease-in-out infinite;
+}
+
+.ai-desk-button::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  opacity: 0;
+  transform: scale(0.95);
+  animation: aiDeskPulse 2.6s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes aiDeskFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes aiDeskPulse {
+  0% { opacity: 0.5; transform: scale(0.92); }
+  70% { opacity: 0; transform: scale(1.18); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
