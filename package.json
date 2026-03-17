@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "payload": "payload"
+    "payload": "payload",
+    "newsroom:refresh": "node scripts/newsroom-refresh.mjs"
   },
   "dependencies": {
     "@payloadcms/db-mongodb": "3.0.0",
