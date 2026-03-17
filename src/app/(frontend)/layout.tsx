@@ -12,12 +12,18 @@ export default async function FrontendLayout({
   children: React.ReactNode;
 }) {
   const breaking = await getBreakingNews(8).catch(() => ({ docs: [] }));
+  const validBreaking = (breaking.docs || []).filter(
+    (item: any) =>
+      typeof item.slug === "string" &&
+      item.slug.trim() !== "" &&
+      item.slug !== "undefined"
+  );
 
   return (
     <>
       <PWAProvider />
       <Header />
-      {breaking.docs.length > 0 && <BreakingTicker items={breaking.docs} />}
+      {validBreaking.length > 0 && <BreakingTicker items={validBreaking} />}
       <main className="pb-14 md:pb-0">{children}</main>
       <Footer />
       <BottomNav />

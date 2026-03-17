@@ -10,11 +10,23 @@ const articleAccess = {
     ["editor-in-chief", "super-admin"].includes(user?.role),
 };
 
+function generateSlug(text: string): string {
+  if (!text) return "";
+  const cleaned = text
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\u0900-\u097F-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .substring(0, 100);
+  return cleaned || `article-${Date.now()}`;
+}
+
 export const Articles: CollectionConfig = {
   slug: "articles",
   admin: {
     useAsTitle: "headline",
-    defaultColumns: ["headline", "category", "author", "status", "publishDate"],
+    defaultColumns: ["headline", "headlineHindi", "category", "author", "status", "publishDate"],
     group: "Content",
     preview: (doc) => `${process.env.NEXT_PUBLIC_SERVER_URL}/article/${doc.slug}`,
   },
@@ -26,22 +38,16 @@ export const Articles: CollectionConfig = {
   hooks: {
     beforeChange: [
       async ({ data }) => {
-        if (!data.slug && data.headline) {
-          data.slug = data.headline
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, "")
-            .replace(/\s+/g, "-")
-            .substring(0, 100);
+        if (!data.slug) {
+          data.slug = generateSlug(data.headline || data.headlineHindi || "");
         }
 
         if (typeof data.slug === "string") {
-          data.slug = data.slug
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, "")
-            .replace(/\s+/g, "-")
-            .replace(/-+/g, "-")
-            .replace(/^-|-$/g, "")
-            .substring(0, 100);
+          data.slug = generateSlug(data.slug);
+        }
+
+        if (!data.slug) {
+          data.slug = `article-${Date.now()}`;
         }
 
         return data;
