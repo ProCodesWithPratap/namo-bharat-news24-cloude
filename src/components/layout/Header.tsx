@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { NAV_CATEGORIES } from "@/lib/utils";
-import { topUtilityLinks } from "@/lib/site-config";
+import { newsroomMeta, socialLinks, topUtilityLinks } from "@/lib/site-config";
 
 const SearchIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -76,6 +76,8 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <span className="font-hindi text-gray-400">{indiaDateTime || "भारत समय"}</span>
           <div className="flex items-center gap-4">
+            <a href={`tel:${newsroomMeta.phone.replace(/\s+/g, "")}`} className="font-hindi hover:text-white transition-colors">{newsroomMeta.phone}</a>
+            <a href={socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp Channel</a>
             {topUtilityLinks.map((link) => (
               <Link key={link.href} href={link.href} className={`hover:text-white transition-colors ${link.hindi ? "font-hindi" : ""}`}>{link.label}</Link>
             ))}
@@ -138,7 +140,7 @@ export default function Header() {
               {topUtilityLinks.map((link) => (
                 <li key={link.href}><Link href={link.href} className={`block px-5 py-3 text-gray-700 ${link.hindi ? "font-hindi" : ""}`} onClick={() => setMobileOpen(false)}>{link.label}</Link></li>
               ))}
-              <li><Link href="/contact" className="block px-5 py-3 text-gray-700" onClick={() => setMobileOpen(false)}>Contact Us</Link></li>
+              <li><Link href="/contact" className="block px-5 py-3 text-gray-700 font-hindi" onClick={() => setMobileOpen(false)}>संपर्क</Link></li>
             </ul>
           </div>
         </div>
