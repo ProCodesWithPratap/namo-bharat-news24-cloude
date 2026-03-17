@@ -4,7 +4,18 @@
  * Next.js server components, route handlers, and ISR.
  */
 
-const API = process.env.NEXT_PUBLIC_SERVER_URL?.replace(/\/$/, "") || "";
+function getBaseUrl(): string {
+  const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL?.trim();
+  if (serverUrl?.startsWith("http")) {
+    return serverUrl.replace(/\/$/, "");
+  }
+
+  if (typeof window === "undefined") {
+    return `http://localhost:${process.env.PORT || 3000}`;
+  }
+
+  return window.location.origin;
+}
 
 type QueryParams = Record<string, string | number | boolean | undefined>;
 
@@ -20,9 +31,9 @@ async function fetchPayload<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
-  const endpoint = API ? `${API}/api${path}` : `/api${path}`;
+  const endpoint = `${getBaseUrl()}/api${path}`;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), 12000);
 
   try {
     const res = await fetch(endpoint, {
@@ -32,10 +43,14 @@ async function fetchPayload<T>(
       ...options,
     });
     clearTimeout(timeout);
-    if (!res.ok) return { docs: [], totalDocs: 0, totalPages: 0 } as T;
+    if (!res.ok) {
+      console.error(`[api] Request failed: ${endpoint} (${res.status})`);
+      return { docs: [], totalDocs: 0, totalPages: 0 } as T;
+    }
     return res.json();
   } catch (e) {
     clearTimeout(timeout);
+    console.error(`[api] Request error: ${endpoint}`, e);
     return { docs: [], totalDocs: 0, totalPages: 0 } as T;
   }
 }

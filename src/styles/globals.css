@@ -206,3 +206,67 @@ a:focus-visible, button:focus-visible {
   70% { opacity: 0; transform: scale(1.18); }
   100% { opacity: 0; transform: scale(1.2); }
 }
+
+/* Utilities for stories & mobile UX */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  header a,
+  header button,
+  nav a,
+  nav button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+.img-skeleton {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  0% { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@media print {
+  header,
+  aside,
+  .ad-slot,
+  .ai-desk-button,
+  [data-ai-widget] {
+    display: none !important;
+  }
+
+  .article-body {
+    font-size: 12pt;
+    line-height: 1.7;
+  }
+}
+
+.article-body p:first-child::first-letter {
+  font-family: "Playfair Display", serif;
+  color: #C8102E;
+  font-size: 3.5em;
+  float: left;
+  line-height: 0.9;
+  margin-right: 0.08em;
+}
