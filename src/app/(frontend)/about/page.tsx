@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import StaticPageLayout from "@/components/common/StaticPageLayout";
 import { newsroomMeta } from "@/lib/site-config";
 
-export const metadata: Metadata = { title: "हमारे बारे में", description: "नमो: भारत न्यूज़ 24 के बारे में जानकारी।" };
+export const metadata: Metadata = {
+  title: "हमारे बारे में | नमो: भारत न्यूज़ 24",
+  description: "नमो: भारत न्यूज़ 24 — भारत की तेज़, सटीक और निष्पक्ष हिंदी खबरें। हमारे मिशन, संपादकीय मानकों और न्यूज़रूम टीम के बारे में जानें।",
+  alternates: { canonical: "https://namo-bharat-news24-cloude.vercel.app/about" },
+};
 
 export default function AboutPage() {
   return (

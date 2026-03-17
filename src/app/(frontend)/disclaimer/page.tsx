@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import StaticPageLayout from "@/components/common/StaticPageLayout";
 
-export const metadata: Metadata = { title: "Disclaimer", description: "कंटेंट उपयोग से संबंधित अस्वीकरण।" };
+export const metadata: Metadata = {
+  title: "अस्वीकरण | नमो: भारत न्यूज़ 24",
+  description: "नमो: भारत न्यूज़ 24 का अस्वीकरण — हमारी खबरें विश्वसनीय स्रोतों पर आधारित हैं। निवेश, स्वास्थ्य या कानूनी मामलों में प्रकाशित सामग्री को अंतिम सलाह न माना जाए।",
+  alternates: { canonical: "https://namo-bharat-news24-cloude.vercel.app/disclaimer" },
+};
 
 export default function DisclaimerPage() {
   return (

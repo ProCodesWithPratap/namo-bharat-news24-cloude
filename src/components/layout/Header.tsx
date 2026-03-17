@@ -1,8 +1,11 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { NAV_CATEGORIES } from "@/lib/utils";
 import { newsroomMeta, socialLinks, topUtilityLinks } from "@/lib/site-config";
+import { trackSearch } from "@/lib/analytics";
+
+type SearchResult = { id: string; slug: string; headline: string; category: string; categorySlug: string };
 
 const SearchIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -27,7 +30,12 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [indiaDateTime, setIndiaDateTime] = useState("");
+  const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
@@ -68,9 +76,61 @@ export default function Header() {
     };
   }, []);
 
+  const fetchSuggestions = useCallback(async (q: string) => {
+    const query = q.trim();
+    if (query.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setSuggestionsLoading(true);
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      setSuggestions(data.docs || []);
+      setShowSuggestions(true);
+    } catch {
+      setSuggestions([]);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchSuggestions(searchQuery);
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery, fetchSuggestions]);
+
+  useEffect(() => {
+    const handleOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  const performSearch = () => {
+    const query = searchQuery.trim();
+    if (query) {
+      trackSearch(query);
+      setShowSuggestions(false);
+      window.location.href = `/search?q=${encodeURIComponent(query)}`;
+    }
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+    performSearch();
   };
 
   return (
@@ -116,10 +176,44 @@ export default function Header() {
 
         {searchOpen && (
           <div className="border-t border-gray-100 bg-gray-50 py-3 px-4 animate-slideDown">
-            <form onSubmit={handleSearch} className="max-w-2xl mx-auto flex gap-2">
-              <input ref={searchRef} type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="खबर खोजें... (Search news)" className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary font-hindi" />
-              <button type="submit" className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-600 transition-colors" style={{ backgroundColor: "#C8102E" }}>खोजें</button>
-            </form>
+            <div className="max-w-2xl mx-auto relative" ref={suggestionsRef}>
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => {
+                    if (searchQuery.trim().length >= 2) setShowSuggestions(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setShowSuggestions(false);
+                  }}
+                  autoComplete="off"
+                  placeholder="खबर खोजें..."
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary font-hindi"
+                />
+                <button type="submit" className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-600 transition-colors" style={{ backgroundColor: "#C8102E" }}>खोजें</button>
+              </form>
+
+              {showSuggestions && (suggestions.length > 0 || suggestionsLoading) && (
+                <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
+                  {suggestionsLoading && <div className="px-4 py-3 text-sm font-hindi text-gray-500">खोज रहे हैं…</div>}
+                  {suggestions.map((item) => (
+                    <Link key={item.id} href={`/article/${item.slug}`} onClick={() => setShowSuggestions(false)} className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-red-50">
+                      <span className="text-gray-400"><SearchIcon /></span>
+                      <div className="min-w-0">
+                        <p className="font-hindi text-sm text-gray-800 line-clamp-1">{item.headline}</p>
+                        <p className="text-xs text-gray-400">{item.category}</p>
+                      </div>
+                    </Link>
+                  ))}
+                  <button onClick={performSearch} className="w-full text-left px-4 py-3 text-sm font-hindi text-[#C8102E] hover:bg-red-50">
+                    "{searchQuery.trim()}" के लिए सभी परिणाम देखें →
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

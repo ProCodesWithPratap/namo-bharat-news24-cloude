@@ -3,6 +3,8 @@ import Footer from "@/components/layout/Footer";
 import BreakingTicker from "@/components/layout/BreakingTicker";
 import { getBreakingNews } from "@/lib/api";
 import NewsAssistant from "@/components/chat/NewsAssistant";
+import PWAProvider from "@/components/common/PWAProvider";
+import BottomNav from "@/components/layout/BottomNav";
 
 export default async function FrontendLayout({
   children,
@@ -13,10 +15,12 @@ export default async function FrontendLayout({
 
   return (
     <>
+      <PWAProvider />
       <Header />
       {breaking.docs.length > 0 && <BreakingTicker items={breaking.docs} />}
-      <main>{children}</main>
+      <main className="pb-14 md:pb-0">{children}</main>
       <Footer />
+      <BottomNav />
       <NewsAssistant />
     </>
   );
