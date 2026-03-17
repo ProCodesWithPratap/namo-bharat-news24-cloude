@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getCategoryBySlug, getCategoryArticles } from "@/lib/api";
 import NewsCard from "@/components/ui/NewsCard";
 import AdSlot from "@/components/ui/AdSlot";
-import { NAV_CATEGORIES, normalizeCategorySlug, SITE_NAME, SITE_URL } from "@/lib/utils";
+import { NAV_CATEGORIES, PUBLIC_CATEGORY_ROUTE_SLUGS, normalizeCategorySlug, SITE_NAME, SITE_URL } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export const revalidate = 60;
@@ -11,7 +11,7 @@ export const revalidate = 60;
 type Props = { params: Promise<{ category: string }>; searchParams: Promise<{ page?: string }> }
 
 export async function generateStaticParams() {
-  return [];
+  return PUBLIC_CATEGORY_ROUTE_SLUGS.map((category) => ({ category }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
