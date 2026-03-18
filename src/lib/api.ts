@@ -4,10 +4,18 @@
  * Next.js server components, route handlers, and ISR.
  */
 
+import configPromise from "@payload-config";
+import { getPayload } from "payload";
+
 function getBaseUrl(): string {
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL?.trim();
   if (serverUrl?.startsWith("http")) {
     return serverUrl.replace(/\/$/, "");
+  }
+
+  const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.VERCEL_URL?.trim();
+  if (vercelUrl) {
+    return `https://${vercelUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
   }
 
   if (typeof window === "undefined") {
@@ -19,6 +27,18 @@ function getBaseUrl(): string {
 
 type QueryParams = Record<string, string | number | boolean | undefined>;
 
+type PayloadCollection =
+  | "ads"
+  | "articles"
+  | "authors"
+  | "categories"
+  | "live-blogs"
+  | "tags"
+  | "videos"
+  | "web-stories";
+
+const hasConfiguredDatabase = Boolean(process.env.DATABASE_URI?.trim());
+
 function buildQuery(params: QueryParams): string {
   const qs = Object.entries(params)
     .filter(([, v]) => v !== undefined)
@@ -27,10 +47,88 @@ function buildQuery(params: QueryParams): string {
   return qs ? `?${qs}` : "";
 }
 
+function parseValue(value: string): unknown {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  if (/^-?\d+$/.test(value)) return Number(value);
+  return value;
+}
+
+function setNestedValue(target: Record<string, any>, path: string[], operator: string, value: unknown) {
+  let cursor = target;
+
+  path.forEach((part, index) => {
+    if (index === path.length - 1) {
+      cursor[part] = {
+        ...(cursor[part] || {}),
+        [operator]: value,
+      };
+      return;
+    }
+
+    cursor[part] = cursor[part] || {};
+    cursor = cursor[part];
+  });
+}
+
+async function fetchPayloadServer<T>(path: string): Promise<T> {
+  const [pathname, rawQuery = ""] = path.split("?");
+  const collection = pathname.replace(/^\//, "") as PayloadCollection;
+  const searchParams = new URLSearchParams(rawQuery);
+  const payload = await getPayload({ config: configPromise });
+  const where: Record<string, any> = {};
+
+  const limit = Number(searchParams.get("limit") || 10);
+  const page = Number(searchParams.get("page") || 1);
+  const depth = Number(searchParams.get("depth") || 0);
+  const sort = searchParams.get("sort") || undefined;
+
+  for (const [key, rawValue] of searchParams.entries()) {
+    if (["limit", "page", "sort", "depth"].includes(key)) continue;
+
+    if (key === "or") {
+      try {
+        where.or = JSON.parse(rawValue);
+      } catch {
+        where.or = [];
+      }
+      continue;
+    }
+
+    const match = key.match(/^(.*)\[([^\]]+)\]$/);
+    if (!match) continue;
+
+    const [, fieldPath, operator] = match;
+    setNestedValue(where, fieldPath.split("."), operator, parseValue(rawValue));
+  }
+
+  return payload.find({
+    collection,
+    where,
+    limit,
+    page,
+    depth,
+    sort,
+  }) as Promise<T>;
+}
+
 async function fetchPayload<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
+  if (typeof window === "undefined") {
+    if (!hasConfiguredDatabase && process.env.NODE_ENV !== "production") {
+      return { docs: [], totalDocs: 0, totalPages: 0 } as T;
+    }
+
+    try {
+      return await fetchPayloadServer<T>(path);
+    } catch (e) {
+      console.error(`[api] Server query error: ${path}`, e);
+      return { docs: [], totalDocs: 0, totalPages: 0 } as T;
+    }
+  }
+
   const endpoint = `${getBaseUrl()}/api${path}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
