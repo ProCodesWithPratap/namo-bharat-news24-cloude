@@ -42,8 +42,6 @@ if (isProduction && !databaseURI) {
 export default buildConfig({
   serverURL,
   secret: payloadSecret || "dev-only-secret",
-  // @ts-expect-error Payload CSS path is configured here for admin theme overrides.
-  css: path.resolve(dirname, "admin/styles/admin-theme.css"),
   admin: {
     user: Users.slug,
     meta: {
@@ -96,6 +94,12 @@ export default buildConfig({
   ],
   typescript: {
     outputFile: path.resolve(dirname, "payload-types.ts"),
+  },
+  routes: {
+    admin: "/payload-admin",
+    api: "/api",
+    graphQL: "/graphql",
+    graphQLPlayground: "/graphql-playground",
   },
   graphQL: {
     schemaOutputFile: path.resolve(dirname, "generated-schema.graphql"),
