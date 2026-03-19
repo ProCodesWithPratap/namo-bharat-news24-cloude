@@ -3,6 +3,9 @@ import type { CollectionConfig } from "payload";
 const MAX_IMAGE_SIZE_BYTES = 500_000; // 500KB soft warning
 const MAX_IMAGE_SIZE_HARD = 5_000_000; // 5MB hard reject
 
+const adminWriteAccess = ({ req: { user } }: any) =>
+  ["section-editor", "managing-editor", "editor-in-chief", "super-admin"].includes(user?.role);
+
 export const Media: CollectionConfig = {
   slug: "media",
   upload: {
@@ -24,6 +27,9 @@ export const Media: CollectionConfig = {
   },
   access: {
     read: () => true,
+    create: adminWriteAccess,
+    update: adminWriteAccess,
+    delete: adminWriteAccess,
   },
   hooks: {
     beforeChange: [

@@ -7,7 +7,8 @@ import {
   getVideos,
   getWebStories,
 } from "@/lib/api";
-import { NAV_CATEGORIES, SITE_DESCRIPTION } from "@/lib/utils";
+import { SITE_DESCRIPTION } from "@/lib/utils";
+import { getNavigationCategoriesData, getSiteSettingsData } from "@/lib/site-data";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -50,9 +51,11 @@ export default async function Home() {
   const featuredArticles = featuredDocs;
   const latestArticles = latestDocs;
 
+  const [navigationCategories, siteData] = await Promise.all([getNavigationCategoriesData(), getSiteSettingsData()]);
+
   const categoryFeeds: Record<string, any[]> = {};
   await Promise.all(
-    NAV_CATEGORIES.slice(0, 8).map(async (cat) => {
+    navigationCategories.slice(0, 8).map(async (cat) => {
       const result = await getCategoryArticles(cat.slug, 4).catch(() => ({ docs: [] }));
       categoryFeeds[cat.slug] = validArticles(result.docs);
     })
@@ -66,6 +69,8 @@ export default async function Home() {
       videos={videoDocs}
       webStories={webStoryDocs}
       trendingArticles={latestArticles.slice(0, 10)}
+      navigationCategories={navigationCategories}
+      socialLinks={siteData.socialLinks}
     />
   );
 }

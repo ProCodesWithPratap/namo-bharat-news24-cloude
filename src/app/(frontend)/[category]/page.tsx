@@ -4,6 +4,7 @@ import { getCategoryBySlug, getCategoryArticles } from "@/lib/api";
 import NewsCard from "@/components/ui/NewsCard";
 import AdSlot from "@/components/ui/AdSlot";
 import { NAV_CATEGORIES, PUBLIC_CATEGORY_ROUTE_SLUGS, normalizeCategorySlug, SITE_NAME, SITE_URL } from "@/lib/utils";
+import { getNavigationCategoriesData } from "@/lib/site-data";
 export const dynamic = "force-dynamic";
 
 export const revalidate = 60;
@@ -18,7 +19,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params;
   const slug = normalizeCategorySlug(category);
   const cat = await getCategoryBySlug(slug);
-  const navFallback = NAV_CATEGORIES.find((item) => item.slug === slug);
+  const navCategories = await getNavigationCategoriesData();
+  const navFallback = navCategories.find((item) => item.slug === slug) || NAV_CATEGORIES.find((item) => item.slug === slug);
   if (!cat && !navFallback) return { title: "Not Found" };
   return {
     title: `${cat?.seo?.metaTitle || cat?.nameHindi || cat?.name || navFallback?.name} | ${SITE_NAME}`,
@@ -42,7 +44,8 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     getCategoryArticles(slug, 20, currentPage),
   ]);
 
-  const navFallback = NAV_CATEGORIES.find((item) => item.slug === slug);
+  const navCategories = await getNavigationCategoriesData();
+  const navFallback = navCategories.find((item) => item.slug === slug) || NAV_CATEGORIES.find((item) => item.slug === slug);
 
   if (!cat && !navFallback) notFound();
 

@@ -1,8 +1,9 @@
 import { getBreakingNews, getCategories, getFeaturedArticles, getLatestArticles } from "@/lib/api";
-import { newsroomMeta, socialLinks } from "@/lib/site-config";
+import { getSiteSettingsData } from "@/lib/site-data";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
 
 export const runtime = "nodejs";
+
 
 type ChatHistoryItem = {
   role: "user" | "assistant";
@@ -163,7 +164,8 @@ function pickCategoryLinks(intent: AssistantIntent, categories: CategoryHint[]) 
   return categories.slice(0, 3);
 }
 
-function createSystemPrompt(context: Awaited<ReturnType<typeof buildNewsContext>>) {
+function createSystemPrompt(context: Awaited<ReturnType<typeof buildNewsContext>>, siteData: Awaited<ReturnType<typeof getSiteSettingsData>>) {
+  const { newsroomMeta, socialLinks } = siteData;
   return `You are AI News Desk assistant for ${SITE_NAME}, a Hindi-first news website.
 
 Rules:
@@ -357,13 +359,13 @@ export async function POST(req: Request) {
       return jsonError("Please enter a valid message.", 400);
     }
 
-    const context = await buildNewsContext();
+    const [context, siteData] = await Promise.all([buildNewsContext(), getSiteSettingsData()]);
     const suggestions = pickSuggestions(message, context);
 
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
     const openAIApiKey = process.env.OPENAI_API_KEY;
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-    const systemPrompt = createSystemPrompt(context);
+    const systemPrompt = createSystemPrompt(context, siteData);
 
     if (anthropicApiKey) {
       try {

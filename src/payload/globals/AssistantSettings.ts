@@ -1,10 +1,14 @@
 import type { GlobalConfig } from "payload";
 
+const adminWriteAccess = ({ req: { user } }: any) =>
+  ["section-editor", "managing-editor", "editor-in-chief", "super-admin"].includes(user?.role);
+
 export const AssistantSettings: GlobalConfig = {
   slug: "assistant-settings",
   label: "Assistant Settings",
   access: {
     read: () => true,
+    update: adminWriteAccess,
   },
   admin: {
     group: "Settings",

@@ -33,6 +33,8 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      { source: "/admin", destination: "/admin-panel.html", permanent: false },
+      { source: "/admin/:path*", destination: "/payload-admin/:path*", permanent: false },
       { source: "/about-us", destination: "/about", permanent: true },
       { source: "/contact-us", destination: "/contact", permanent: true },
       { source: "/privacy-policy", destination: "/privacy", permanent: true },
