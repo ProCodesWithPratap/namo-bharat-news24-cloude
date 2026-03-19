@@ -1,8 +1,5 @@
-(() => {
-  const STORAGE_KEYS = {
-    token: 'nb_classic_admin_token_v2'
-  };
-
+// @ts-nocheck
+export function initClassicAdminPanel() {
   const API = {
     login: '/api/users/login',
     me: '/api/users/me',
@@ -29,18 +26,8 @@
     setTimeout(() => t.classList.remove('show'), 2400);
   }
 
-  function getToken() {
-    return localStorage.getItem(STORAGE_KEYS.token) || '';
-  }
-
-  function setToken(token) {
-    if (token) localStorage.setItem(STORAGE_KEYS.token, token);
-  }
-
   async function apiFetch(path, options = {}) {
     const headers = new Headers(options.headers || {});
-    const token = getToken();
-    if (token && !headers.has('Authorization')) headers.set('Authorization', 'JWT ' + token);
     if (!(options.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
 
     const res = await fetch(path, { ...options, headers, credentials: 'include' });
@@ -48,25 +35,28 @@
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch (_e) {}
     if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        redirectToLogin();
+      }
       const message = data?.errors?.[0]?.message || data?.message || data?.error || ('HTTP ' + res.status);
       throw new Error(message);
     }
     return data;
   }
 
+  function redirectToLogin() {
+    window.location.href = '/payload-admin/login?redirect=/admin';
+  }
+
   async function ensureAuth() {
-    if (getToken()) return getToken();
-    const email = prompt('Admin email');
-    if (!email) throw new Error('Login cancelled');
-    const password = prompt('Admin password');
-    if (!password) throw new Error('Login cancelled');
-    const data = await apiFetch(API.login, {
-      method: 'POST',
-      body: JSON.stringify({ email, password })
-    });
-    setToken(data.token);
-    toast('Admin login successful');
-    return data.token;
+    try {
+      const data = await apiFetch(API.me, { method: 'GET' });
+      if (!data?.user) throw new Error('Authentication required');
+      return data.user;
+    } catch (_error) {
+      redirectToLogin();
+      throw new Error('Authentication required');
+    }
   }
 
   function hideAllPanels() {
@@ -677,8 +667,7 @@
 
   function resetAll() {
     if (!confirm('Clear saved login session?')) return;
-    localStorage.removeItem(STORAGE_KEYS.token);
-    location.reload();
+    window.location.href = '/admin/logout';
   }
   window.resetAll = resetAll;
 
@@ -798,5 +787,5 @@
     }
   }
 
-  window.addEventListener('DOMContentLoaded', init);
-})();
+  init();
+}
