@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE_URL } from "@/lib/utils";
-import { socialLinks } from "@/lib/site-config";
+import { getSiteSettingsData } from "@/lib/site-data";
 import EPaperViewer from "./EPaperViewer";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function EPaperPage() {
+export default async function EPaperPage() {
+  const { socialLinks } = await getSiteSettingsData();
   const epaperUrl = process.env.NEXT_PUBLIC_EPAPER_URL || "";
   const todayLabel = new Date().toLocaleDateString("hi-IN", {
     weekday: "long",
@@ -63,7 +64,7 @@ export default function EPaperPage() {
           ) : null}
         </header>
 
-        <EPaperViewer epaperUrl={epaperUrl} />
+        <EPaperViewer epaperUrl={epaperUrl} whatsappHref={socialLinks.whatsapp} />
 
         <section className="rounded-lg border border-gray-200 bg-gray-50 p-6">
           <h2 className="text-2xl font-bold text-gray-900 font-hindi">📦 पुराने अंक</h2>

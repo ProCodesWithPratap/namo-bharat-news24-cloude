@@ -1,5 +1,8 @@
 import type { CollectionConfig } from "payload";
 
+const adminWriteAccess = ({ req: { user } }: any) =>
+  ["section-editor", "managing-editor", "editor-in-chief", "super-admin"].includes(user?.role);
+
 export const Authors: CollectionConfig = {
   slug: "authors",
   admin: {
@@ -7,7 +10,12 @@ export const Authors: CollectionConfig = {
     defaultColumns: ["name", "designation", "slug"],
     group: "Content",
   },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    create: adminWriteAccess,
+    update: adminWriteAccess,
+    delete: adminWriteAccess,
+  },
   fields: [
     { name: "name", type: "text", required: true, label: "Name" },
     { name: "nameHindi", type: "text", label: "Name (Hindi)" },

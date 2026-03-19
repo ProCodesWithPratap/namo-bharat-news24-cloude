@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import StaticPageLayout from "@/components/common/StaticPageLayout";
-import { newsroomMeta } from "@/lib/site-config";
+import { getSiteSettingsData } from "@/lib/site-data";
 
 export const metadata: Metadata = {
   title: "हमारे बारे में | नमो: भारत न्यूज़ 24",
@@ -8,9 +8,11 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://namo-bharat-news24-cloude.vercel.app/about" },
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const { newsroomMeta } = await getSiteSettingsData();
+
   return (
-    <StaticPageLayout title="हमारे बारे में" description="तथ्य स्पष्ट, विचार निष्पक्ष।">
+    <StaticPageLayout title="हमारे बारे में" description={newsroomMeta.tagline}>
       <p>{newsroomMeta.about}</p>
       <p className="mt-3">{newsroomMeta.joinMessage}</p>
       <h2 className="font-bold text-lg mt-6 mb-2">हमारा मिशन</h2>

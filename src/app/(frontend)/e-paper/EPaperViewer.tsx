@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { socialLinks } from "@/lib/site-config";
 
 type EPaperViewerProps = {
   epaperUrl: string;
+  whatsappHref?: string;
 };
 
-export default function EPaperViewer({ epaperUrl }: EPaperViewerProps) {
+export default function EPaperViewer({ epaperUrl, whatsappHref }: EPaperViewerProps) {
   const [iframeError, setIframeError] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
@@ -25,7 +25,7 @@ export default function EPaperViewer({ epaperUrl }: EPaperViewerProps) {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
-              href={socialLinks.whatsapp}
+              href={whatsappHref || "#"}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center rounded-md px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 font-hindi"

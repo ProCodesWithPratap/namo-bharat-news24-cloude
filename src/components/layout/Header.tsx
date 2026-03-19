@@ -1,11 +1,13 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { NAV_CATEGORIES } from "@/lib/utils";
-import { newsroomMeta, socialLinks, topUtilityLinks } from "@/lib/site-config";
 import { trackSearch } from "@/lib/analytics";
 
 type SearchResult = { id: string; slug: string; headline: string; category: string; categorySlug: string };
+type NavCategory = { name: string; nameEn: string; slug: string };
+type UtilityLink = { href: string; label: string; hindi?: boolean };
+type NewsroomMeta = { phone: string };
+type SocialLinks = { whatsapp?: string };
 
 const SearchIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -23,7 +25,17 @@ const CloseIcon = () => (
   </svg>
 );
 
-export default function Header() {
+export default function Header({
+  categories,
+  newsroomMeta,
+  socialLinks,
+  topUtilityLinks,
+}: {
+  categories: NavCategory[];
+  newsroomMeta: NewsroomMeta;
+  socialLinks: SocialLinks;
+  topUtilityLinks: UtilityLink[];
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -140,7 +152,7 @@ export default function Header() {
           <span className="font-hindi text-gray-400">{indiaDateTime || "भारत समय"}</span>
           <div className="flex items-center gap-4">
             <a href={`tel:${newsroomMeta.phone.replace(/\s+/g, "")}`} className="font-hindi hover:text-white transition-colors">{newsroomMeta.phone}</a>
-            <a href={socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp Channel</a>
+            {socialLinks.whatsapp ? <a href={socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp Channel</a> : null}
             {topUtilityLinks.map((link) => (
               <Link key={link.href} href={link.href} className={`hover:text-white transition-colors ${link.hindi ? "font-hindi" : ""}`}>{link.label}</Link>
             ))}
@@ -238,37 +250,28 @@ export default function Header() {
 
         <nav className="hidden md:block border-t border-gray-100">
           <div className="max-w-7xl mx-auto px-4">
-            <ul className="flex items-center gap-0 overflow-x-auto">
-              <li><Link href="/" className="flex items-center px-3 py-3 text-sm font-semibold text-gray-800 hover:text-primary border-b-2 border-transparent hover:border-primary transition-colors whitespace-nowrap font-hindi">होम</Link></li>
-              {NAV_CATEGORIES.map((cat) => (
-                <li key={cat.slug}><Link href={`/${cat.slug}`} className="flex items-center px-3 py-3 text-sm font-semibold text-gray-700 hover:text-primary border-b-2 border-transparent hover:border-primary transition-colors whitespace-nowrap font-hindi">{cat.name}</Link></li>
+            <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide py-3 text-sm font-hindi font-semibold text-gray-700">
+              {categories.map((cat) => (
+                <Link key={cat.slug} href={`/${cat.slug}`} className="whitespace-nowrap hover:text-[#C8102E] transition-colors">
+                  {cat.name}
+                </Link>
               ))}
-            </ul>
+            </div>
           </div>
         </nav>
-      </header>
 
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-72 bg-white overflow-y-auto animate-slideDown">
-            <div className="flex items-center justify-between p-4 border-b">
-              <span className="font-hindi text-lg font-extrabold" style={{ color: "#C8102E" }}>नमो: भारत न्यूज़ <span style={{ color: "#111" }}>24</span></span>
-              <button onClick={() => setMobileOpen(false)}><CloseIcon /></button>
+        {mobileOpen && (
+          <div className="md:hidden border-t border-gray-100 bg-white">
+            <div className="px-4 py-3 space-y-2">
+              {categories.map((cat) => (
+                <Link key={cat.slug} href={`/${cat.slug}`} onClick={() => setMobileOpen(false)} className="block rounded-lg px-3 py-2 font-hindi text-sm text-gray-700 hover:bg-red-50 hover:text-[#C8102E] transition-colors">
+                  {cat.name}
+                </Link>
+              ))}
             </div>
-            <ul className="py-2">
-              <li><Link href="/" className="block px-5 py-3 font-hindi font-semibold text-gray-800 hover:bg-red-50 hover:text-primary" onClick={() => setMobileOpen(false)}>🏠 होम</Link></li>
-              {NAV_CATEGORIES.map((cat) => (
-                <li key={cat.slug}><Link href={`/${cat.slug}`} className="block px-5 py-3 font-hindi text-gray-700 hover:bg-red-50 hover:text-primary" onClick={() => setMobileOpen(false)}>{cat.name}</Link></li>
-              ))}
-              {topUtilityLinks.map((link) => (
-                <li key={link.href}><Link href={link.href} className={`block px-5 py-3 text-gray-700 ${link.hindi ? "font-hindi" : ""}`} onClick={() => setMobileOpen(false)}>{link.label}</Link></li>
-              ))}
-              <li><Link href="/contact" className="block px-5 py-3 text-gray-700 font-hindi" onClick={() => setMobileOpen(false)}>संपर्क</Link></li>
-            </ul>
           </div>
-        </div>
-      )}
+        )}
+      </header>
     </>
   );
 }

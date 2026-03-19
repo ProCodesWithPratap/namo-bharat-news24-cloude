@@ -1,8 +1,33 @@
 import Link from "next/link";
-import { NAV_CATEGORIES } from "@/lib/utils";
-import { footerQuickLinks, footerSocialItems, newsroomMeta, socialLinks } from "@/lib/site-config";
 
-export default function Footer() {
+type NavCategory = { name: string; slug: string };
+type FooterLink = { href: string; label: string };
+type FooterSocialItem = { key: string; label: string; href: string };
+type NewsroomMeta = {
+  about: string;
+  valueStatement: string;
+  address: string;
+  contactEmail: string;
+  editorialEmail: string;
+  phone: string;
+  joinMessage: string;
+  copyright: string;
+};
+type SocialLinks = { whatsapp?: string };
+
+export default function Footer({
+  categories,
+  newsroomMeta,
+  socialLinks,
+  footerQuickLinks,
+  footerSocialItems,
+}: {
+  categories: NavCategory[];
+  newsroomMeta: NewsroomMeta;
+  socialLinks: SocialLinks;
+  footerQuickLinks: FooterLink[];
+  footerSocialItems: FooterSocialItem[];
+}) {
   const year = new Date().getFullYear();
 
   return (
@@ -24,7 +49,7 @@ export default function Footer() {
         <div>
           <h4 className="text-white font-bold text-sm mb-4 font-hindi">मुख्य श्रेणियां</h4>
           <ul className="space-y-2">
-            {NAV_CATEGORIES.slice(0, 8).map((cat) => (
+            {categories.slice(0, 8).map((cat) => (
               <li key={cat.slug}><Link href={`/${cat.slug}`} className="text-sm font-hindi hover:text-white transition-colors">{cat.name}</Link></li>
             ))}
           </ul>

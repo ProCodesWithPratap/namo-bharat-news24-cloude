@@ -4,7 +4,6 @@ import NewsCard from "@/components/ui/NewsCard";
 import AdSlot from "@/components/ui/AdSlot";
 import SectionHeader from "@/components/common/SectionHeader";
 import { getImageUrl } from "@/lib/api";
-import { NAV_CATEGORIES } from "@/lib/utils";
 import WhatsAppCTAButton from "@/components/common/WhatsAppCTAButton";
 
 interface HomePageProps {
@@ -14,9 +13,11 @@ interface HomePageProps {
   videos: any[];
   webStories: any[];
   trendingArticles: any[];
+  navigationCategories: Array<{ name: string; nameEn: string; slug: string }>;
+  socialLinks: { facebook?: string; instagram?: string; youtube?: string; whatsapp?: string };
 }
 
-export default function HomePage({ featuredArticles, latestArticles, categoryFeeds, videos, webStories, trendingArticles }: HomePageProps) {
+export default function HomePage({ featuredArticles, latestArticles, categoryFeeds, videos, webStories, trendingArticles, navigationCategories, socialLinks }: HomePageProps) {
   const hero = featuredArticles[0];
   const topStories = featuredArticles.slice(1, 5);
   const hasAnyNews = featuredArticles.length > 0 || latestArticles.length > 0;
@@ -56,8 +57,8 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
             {latestArticles.slice(0, 6).map((a) => <NewsCard key={a.id} article={a} variant="card" />)}
           </div>
 
-          {["states", "national", "entertainment", "sports"].map((slug) => {
-            const cat = NAV_CATEGORIES.find((item) => item.slug === slug);
+          {navigationCategories.slice(0, 4).map((cat) => {
+            const slug = cat.slug;
             const feed = categoryFeeds[slug] || [];
             if (!cat || !feed.length) return null;
             return (
@@ -75,7 +76,7 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
           <div className="rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 p-4 text-white shadow-lg">
             <h3 className="font-hindi text-lg font-extrabold">व्हाट्सऐप चैनल जॉइन करें</h3>
             <p className="font-hindi text-sm text-green-50 mt-1">ब्रेकिंग न्यूज़ और बड़ी खबरें सबसे पहले सीधे WhatsApp पर पाएं।</p>
-            <WhatsAppCTAButton href="https://whatsapp.com/channel/0029VbCBrGu6hENlyE9rvW3N" label="चैनल से जुड़ें" location="homepage_sidebar" className="mt-3 inline-flex px-4 py-2 rounded-lg bg-white text-green-700 font-hindi font-bold hover:bg-green-50 transition-colors" />
+            <WhatsAppCTAButton href={socialLinks.whatsapp || "https://whatsapp.com/channel/0029VbCBrGu6hENlyE9rvW3N"} label="चैनल से जुड़ें" location="homepage_sidebar" className="mt-3 inline-flex px-4 py-2 rounded-lg bg-white text-green-700 font-hindi font-bold hover:bg-green-50 transition-colors" />
           </div>
 
           <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
@@ -144,10 +145,10 @@ export default function HomePage({ featuredArticles, latestArticles, categoryFee
             <p className="font-hindi text-sm text-gray-300 mt-1">ताज़ा खबरें, वीडियो और एक्सक्लूसिव अपडेट सबसे पहले पाएं।</p>
           </div>
           <div className="flex flex-wrap gap-2 font-hindi">
-            <a href="#" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700">फ़ेसबुक</a>
-            <a href="#" className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700">यूट्यूब</a>
-            <a href="#" className="px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-700">इंस्टाग्राम</a>
-            <WhatsAppCTAButton href="https://whatsapp.com/channel/0029VbCBrGu6hENlyE9rvW3N" label="व्हाट्सऐप चैनल जॉइन" location="homepage_footer_strip" className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700" />
+            <a href={socialLinks.facebook || "#"} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700">फ़ेसबुक</a>
+            <a href={socialLinks.youtube || "#"} className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700">यूट्यूब</a>
+            <a href={socialLinks.instagram || "#"} className="px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-700">इंस्टाग्राम</a>
+            <WhatsAppCTAButton href={socialLinks.whatsapp || "https://whatsapp.com/channel/0029VbCBrGu6hENlyE9rvW3N"} label="व्हाट्सऐप चैनल जॉइन" location="homepage_footer_strip" className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700" />
           </div>
         </div>
       </section>
