@@ -1,4 +1,5 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
+.shell *, .shell *::before, .shell *::after { box-sizing: border-box; }
+    .shell { margin: 0; padding: 0; }
     :root {
       --red: #C0392B;
       --red2: #a93226;
@@ -35,12 +36,6 @@
       --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
-    body {
-      font-family: var(--font-sans);
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      font-size: 13px;
-    }
 
     .shell {
       display: grid;
@@ -48,6 +43,10 @@
       grid-template-rows: 48px 1fr;
       height: 100vh;
       min-height: 800px;
+      font-family: var(--font-sans);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-size: 13px;
     }
 
     .topbar {
@@ -157,10 +156,10 @@
     .panel-body { padding: 14px 16px; }
 
     .form-group { margin-bottom: 14px; }
-    label { display: block; font-size: 11px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
+    .shell label { display: block; font-size: 11px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
 
-    input[type=text], input[type=url], input[type=email], input[type=color], input[type=number],
-    select, textarea {
+    .shell input[type=text], .shell input[type=url], .shell input[type=email], .shell input[type=color], .shell input[type=number],
+    .shell select, .shell textarea {
       width: 100%;
       padding: 7px 10px;
       border: 0.5px solid var(--color-border-secondary);
@@ -171,14 +170,14 @@
       font-family: var(--font-sans);
     }
 
-    input:focus, select:focus, textarea:focus {
+    .shell input:focus, .shell select:focus, .shell textarea:focus {
       outline: none;
       border-color: var(--red);
     }
 
-    textarea { resize: vertical; line-height: 1.6; }
-    input[type=color] { padding: 3px; height: 34px; cursor: pointer; }
-    input[type=range] { width: 100%; accent-color: var(--red); }
+    .shell textarea { resize: vertical; line-height: 1.6; }
+    .shell input[type=color] { padding: 3px; height: 34px; cursor: pointer; }
+    .shell input[type=range] { width: 100%; accent-color: var(--red); }
 
     .color-row { display: flex; gap: 8px; align-items: center; }
     .color-swatch { width: 28px; height: 28px; border-radius: 6px; border: 0.5px solid var(--color-border-secondary); cursor: pointer; flex-shrink: 0; }
@@ -255,10 +254,10 @@
     .alert { padding: 10px 14px; border-radius: var(--border-radius-md); font-size: 12px; margin-bottom: 12px; }
     .aw { background: var(--color-background-warning); border: 0.5px solid var(--color-border-warning); color: var(--color-text-warning); }
 
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: var(--bg-tertiary); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+    .shell ::-webkit-scrollbar { width: 8px; }
+    .shell ::-webkit-scrollbar-track { background: var(--bg-tertiary); }
+    .shell ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .shell ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
 
 
     .shell, .main, .preview-area, .edit-panel, .page, .card, .sc, .site-preview { min-width: 0; }
@@ -327,7 +326,7 @@
     }
 
     @media (max-width: 640px) {
-      body { font-size: 12px; }
+      .shell { font-size: 12px; }
       .sidebar-tabs { overflow-x: auto; }
       .stab { min-width: 92px; white-space: nowrap; }
       .page, .panel-body { padding: 12px; }

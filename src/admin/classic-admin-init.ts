@@ -201,13 +201,13 @@ export function initClassicAdminPanel() {
   }
 
   function getPreviewEls() {
-    if (previewEls) return previewEls;
-    const rightCol = document.querySelectorAll('.shell > div > div')[2] || document.querySelector('.shell > div:last-child');
-    const box = rightCol ? rightCol.querySelector('div[style*="min-height:400px"]') : null;
-    const header = box ? box.children[0] : null;
-    const nav = box ? box.children[1] : null;
-    const body = box ? box.children[2] : null;
-    previewEls = { box, header, nav, body };
+    if (previewEls && previewEls.header) return previewEls;
+    previewEls = {
+      box: document.getElementById('preview-box'),
+      header: document.getElementById('preview-header'),
+      nav: document.getElementById('preview-nav'),
+      body: document.getElementById('preview-body'),
+    };
     return previewEls;
   }
 
@@ -606,18 +606,27 @@ export function initClassicAdminPanel() {
         navOrder: index + 1
       };
 
-      if (item.id && existingById.has(item.id)) {
-        await apiFetch(API.categories + '/' + item.id, { method: 'PATCH', body: JSON.stringify(data) });
-        keptIds.add(item.id);
-      } else {
-        const created = await apiFetch(API.categories, { method: 'POST', body: JSON.stringify(data) });
-        if (created?.doc?.id) keptIds.add(created.doc.id);
+      try {
+        if (item.id && existingById.has(item.id)) {
+          await apiFetch(API.categories + '/' + item.id, { method: 'PATCH', body: JSON.stringify(data) });
+          keptIds.add(item.id);
+        } else {
+          const created = await apiFetch(API.categories, { method: 'POST', body: JSON.stringify(data) });
+          const createdId = created?.doc?.id || created?.id;
+          if (createdId) keptIds.add(createdId);
+        }
+      } catch (error) {
+        console.warn('Failed to persist navigation item', item, error);
       }
     }
 
     const hiddenCategories = currentCategories.filter(item => item.showInNav && item.id && !keptIds.has(item.id));
     for (const item of hiddenCategories) {
-      await apiFetch(API.categories + '/' + item.id, { method: 'PATCH', body: JSON.stringify({ showInNav: false }) });
+      try {
+        await apiFetch(API.categories + '/' + item.id, { method: 'PATCH', body: JSON.stringify({ showInNav: false }) });
+      } catch (error) {
+        console.warn('Failed to hide navigation item', item, error);
+      }
     }
   }
 
@@ -770,6 +779,7 @@ export function initClassicAdminPanel() {
   }
 
   async function init() {
+    previewEls = null;
     ensureSettingsFields();
     enableToggleClicks();
     bindLiveInputs();

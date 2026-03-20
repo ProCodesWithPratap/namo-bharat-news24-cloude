@@ -520,10 +520,10 @@ export const classicAdminMarkup = `<div class="shell">
       <div style="background:white;border-left:0.5px solid var(--border-light);padding:18px;overflow-y:auto;display:flex;flex-direction:column">
         <div style="font-size:14px;font-weight:600;margin-bottom:16px">Live Preview</div>
         <div style="background:#f0f0f0;border-radius:8px;padding:16px;flex:1;overflow-y:auto">
-          <div style="background:#fff;border-radius:6px;min-height:400px;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
-            <div style="background:var(--red);color:#fff;padding:12px;text-align:center;font-weight:600">नमो: भारत न्यूज़ 24</div>
-            <div style="background:#1a1a1a;padding:8px;display:flex;gap:12px"><span style="color:#ccc;font-size:10px">होम</span><span style="color:#ccc;font-size:10px">राष्ट्रीय</span><span style="color:#ccc;font-size:10px">खेल</span></div>
-            <div style="padding:12px;font-size:12px;color:#666">Preview updates in real-time</div>
+          <div id="preview-box" style="background:#fff;border-radius:6px;min-height:400px;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+            <div id="preview-header" style="background:var(--red);color:#fff;padding:12px;text-align:center;font-weight:600">नमो: भारत न्यूज़ 24</div>
+            <div id="preview-nav" style="background:#1a1a1a;padding:8px;display:flex;gap:12px"><span style="color:#ccc;font-size:10px">होम</span><span style="color:#ccc;font-size:10px">राष्ट्रीय</span><span style="color:#ccc;font-size:10px">खेल</span></div>
+            <div id="preview-body" style="padding:12px;font-size:12px;color:#666">Preview updates in real-time</div>
           </div>
         </div>
       </div>
