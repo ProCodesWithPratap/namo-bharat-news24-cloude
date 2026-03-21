@@ -42,8 +42,10 @@ export default async function Home() {
       getVideos(8),
       getWebStories(8),
     ]);
-    featuredDocs = validArticles(featured.docs);
     latestDocs = validArticles(latest.docs);
+    featuredDocs = validArticles(featured.docs).length > 0
+      ? validArticles(featured.docs)
+      : latestDocs.slice(0, 8);
     videoDocs = videos.docs;
     webStoryDocs = webStories.docs;
   } catch {}
