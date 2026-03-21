@@ -109,6 +109,7 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
     page,
     depth,
     sort,
+    draft: false,
   }) as Promise<T>;
 }
 
