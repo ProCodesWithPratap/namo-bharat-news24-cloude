@@ -85,19 +85,12 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
 
   for (const [key, rawValue] of searchParams.entries()) {
     if (["limit", "page", "sort", "depth"].includes(key)) continue;
-
     if (key === "or") {
-      try {
-        where.or = JSON.parse(rawValue);
-      } catch {
-        where.or = [];
-      }
+      try { where.or = JSON.parse(rawValue); } catch { where.or = []; }
       continue;
     }
-
     const match = key.match(/^(.*)\[([^\]]+)\]$/);
     if (!match) continue;
-
     const [, fieldPath, operator] = match;
     const orMatch = fieldPath.match(/^or\[(\d+)\]\[(.+)\]$/);
     if (orMatch) {
@@ -111,16 +104,17 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
     setNestedValue(where, fieldPath.split("."), operator, parseValue(rawValue));
   }
 
-  return payload.find({
+  const result = await payload.find({
     collection,
-    where,
+    where: Object.keys(where).length > 0 ? where : undefined,
     limit,
     page,
     depth,
     sort,
-    draft: false,
     overrideAccess: true,
-  }) as Promise<T>;
+  }) as T;
+
+  return result;
 }
 
 async function fetchPayload<T>(
