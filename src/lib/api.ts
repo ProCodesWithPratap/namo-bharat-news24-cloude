@@ -85,31 +85,27 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
 
   for (const [key, rawValue] of searchParams.entries()) {
     if (["limit", "page", "sort", "depth"].includes(key)) continue;
-
     if (key === "or") {
-      try {
-        where.or = JSON.parse(rawValue);
-      } catch {
-        where.or = [];
-      }
+      try { where.or = JSON.parse(rawValue); } catch { where.or = []; }
       continue;
     }
-
     const match = key.match(/^(.*)\[([^\]]+)\]$/);
     if (!match) continue;
-
     const [, fieldPath, operator] = match;
     setNestedValue(where, fieldPath.split("."), operator, parseValue(rawValue));
   }
 
-  return payload.find({
+  const result = await payload.find({
     collection,
-    where,
+    where: Object.keys(where).length > 0 ? where : undefined,
     limit,
     page,
     depth,
     sort,
-  }) as Promise<T>;
+    overrideAccess: true,
+  }) as T;
+
+  return result;
 }
 
 async function fetchPayload<T>(
@@ -177,9 +173,7 @@ export async function getArticles(opts?: {
     sort = "-publishDate",
   } = opts || {};
 
-  const where: Record<string, unknown> = {
-    "status[equals]": "published",
-  };
+  const where: Record<string, unknown> = {};
   if (category) where["category.slug[equals]"] = category;
   if (tag) where["tags.slug[equals]"] = tag;
   if (featured) where["featured[equals]"] = "true";
@@ -218,7 +212,6 @@ export async function getCategoryArticles(categorySlug: string, limit = 12, page
 
 export async function getRelatedArticles(articleId: string, categorySlug: string, limit = 4) {
   const q = buildQuery({
-    "status[equals]": "published",
     "category.slug[equals]": categorySlug,
     "id[not_equals]": articleId,
     sort: "-publishDate",
@@ -286,7 +279,6 @@ export async function getTagBySlug(slug: string) {
 
 export async function searchArticles(query: string, limit = 10, page = 1) {
   const q = buildQuery({
-    "status[equals]": "published",
     or: JSON.stringify([
       { headline: { like: query } },
       { headlineHindi: { like: query } },
