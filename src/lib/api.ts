@@ -99,6 +99,15 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
     if (!match) continue;
 
     const [, fieldPath, operator] = match;
+    const orMatch = fieldPath.match(/^or\[(\d+)\]\[(.+)\]$/);
+    if (orMatch) {
+      const [, index, nestedFieldPath] = orMatch;
+      where.or = Array.isArray(where.or) ? where.or : [];
+      where.or[Number(index)] = where.or[Number(index)] || {};
+      setNestedValue(where.or[Number(index)], nestedFieldPath.split("."), operator, parseValue(rawValue));
+      continue;
+    }
+
     setNestedValue(where, fieldPath.split("."), operator, parseValue(rawValue));
   }
 
@@ -109,6 +118,7 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
     page,
     depth,
     sort,
+    draft: false,
   }) as Promise<T>;
 }
 
@@ -178,7 +188,8 @@ export async function getArticles(opts?: {
   } = opts || {};
 
   const where: Record<string, unknown> = {
-    "status[equals]": "published",
+    "or[0][status][equals]": "published",
+    "or[1][_status][equals]": "published",
   };
   if (category) where["category.slug[equals]"] = category;
   if (tag) where["tags.slug[equals]"] = tag;
@@ -218,7 +229,8 @@ export async function getCategoryArticles(categorySlug: string, limit = 12, page
 
 export async function getRelatedArticles(articleId: string, categorySlug: string, limit = 4) {
   const q = buildQuery({
-    "status[equals]": "published",
+    "or[0][status][equals]": "published",
+    "or[1][_status][equals]": "published",
     "category.slug[equals]": categorySlug,
     "id[not_equals]": articleId,
     sort: "-publishDate",
