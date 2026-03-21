@@ -104,6 +104,7 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
     setNestedValue(where, fieldPath.split("."), operator, parseValue(rawValue));
   }
 
+  console.log(`[api] payload.find collection=${collection} where=${JSON.stringify(where)} limit=${limit}`);
   const result = await payload.find({
     collection,
     where: Object.keys(where).length > 0 ? where : undefined,
@@ -112,9 +113,9 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
     depth,
     sort,
     overrideAccess: true,
-  }) as T;
-
-  return result;
+  });
+  console.log(`[api] payload.find DONE collection=${collection} docs=${(result as any)?.docs?.length}`);
+  return result as Promise<T>;
 }
 
 async function fetchPayload<T>(
@@ -127,9 +128,12 @@ async function fetchPayload<T>(
     }
 
     try {
-      return await fetchPayloadServer<T>(path);
+      const result = await fetchPayloadServer<T>(path);
+      const r = result as any;
+      console.log(`[api] SERVER OK ${path} → docs:${r?.docs?.length ?? '?'} total:${r?.totalDocs ?? '?'}`);
+      return result;
     } catch (e) {
-      console.error(`[api] Server query error: ${path}`, e);
+      console.error(`[api] SERVER ERROR ${path}`, String(e));
       return { docs: [], totalDocs: 0, totalPages: 0 } as T;
     }
   }
