@@ -119,6 +119,7 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
     depth,
     sort,
     draft: false,
+    overrideAccess: true,
   }) as Promise<T>;
 }
 
@@ -187,10 +188,7 @@ export async function getArticles(opts?: {
     sort = "-publishDate",
   } = opts || {};
 
-  const where: Record<string, unknown> = {
-    "or[0][status][equals]": "published",
-    "or[1][_status][equals]": "published",
-  };
+  const where: Record<string, unknown> = {};
   if (category) where["category.slug[equals]"] = category;
   if (tag) where["tags.slug[equals]"] = tag;
   if (featured) where["featured[equals]"] = "true";
@@ -229,8 +227,6 @@ export async function getCategoryArticles(categorySlug: string, limit = 12, page
 
 export async function getRelatedArticles(articleId: string, categorySlug: string, limit = 4) {
   const q = buildQuery({
-    "or[0][status][equals]": "published",
-    "or[1][_status][equals]": "published",
     "category.slug[equals]": categorySlug,
     "id[not_equals]": articleId,
     sort: "-publishDate",
@@ -298,7 +294,6 @@ export async function getTagBySlug(slug: string) {
 
 export async function searchArticles(query: string, limit = 10, page = 1) {
   const q = buildQuery({
-    "status[equals]": "published",
     or: JSON.stringify([
       { headline: { like: query } },
       { headlineHindi: { like: query } },
