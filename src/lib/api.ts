@@ -164,7 +164,13 @@ async function fetchPayload<T>(
 
 // ── Articles ──────────────────────────────────────────────────────────────
 
-export async function getArticles(opts?: {
+type PaginatedArticles = {
+  docs: any[];
+  totalDocs: number;
+  totalPages: number;
+};
+
+export async function getArticles(options: {
   limit?: number;
   page?: number;
   category?: string;
@@ -174,7 +180,7 @@ export async function getArticles(opts?: {
   breakingNews?: boolean;
   language?: string;
   sort?: string;
-}) {
+} = {}): Promise<PaginatedArticles> {
   const {
     limit = 10,
     page = 1,
@@ -184,19 +190,37 @@ export async function getArticles(opts?: {
     breakingNews,
     language,
     sort = "-publishDate",
-  } = opts || {};
+  } = options;
 
-  const where: Record<string, unknown> = {};
-  if (category) where["category.slug[equals]"] = category;
-  if (tag) where["tags.slug[equals]"] = tag;
-  if (featured) where["featured[equals]"] = "true";
-  if (breakingNews) where["breakingNews[equals]"] = "true";
-  if (language) where["language[equals]"] = language;
+  if (typeof window !== "undefined") {
+    return { docs: [], totalDocs: 0, totalPages: 0 };
+  }
 
-  const q = buildQuery({ limit, page, sort, depth: 2, ...where });
-  return fetchPayload<{ docs: any[]; totalDocs: number; totalPages: number }>(
-    `/articles${q}`
-  );
+  try {
+    const payload = await getPayload({ config: configPromise });
+    const where: Record<string, any> = {};
+
+    if (category) where["category.slug"] = { equals: category };
+    if (tag) where["tags.slug"] = { equals: tag };
+    if (featured) where.featured = { equals: true };
+    if (breakingNews) where.breakingNews = { equals: true };
+    if (language) where.language = { equals: language };
+
+    const result = await payload.find({
+      collection: "articles",
+      where: Object.keys(where).length > 0 ? where : undefined,
+      limit,
+      page,
+      depth: 2,
+      sort,
+      overrideAccess: true,
+    });
+
+    return result as unknown as PaginatedArticles;
+  } catch (e) {
+    console.error("[getArticles] error:", e);
+    return { docs: [], totalDocs: 0, totalPages: 0 };
+  }
 }
 
 export async function getArticleBySlug(slug: string) {
@@ -211,27 +235,106 @@ export async function getBreakingNews(limit = 5) {
   return getArticles({ breakingNews: true, limit, sort: "-publishDate" });
 }
 
-export async function getFeaturedArticles(limit = 6) {
-  return getArticles({ featured: true, limit, sort: "-publishDate" });
+export async function getFeaturedArticles(limit = 6): Promise<PaginatedArticles> {
+  if (typeof window !== "undefined") {
+    return { docs: [], totalDocs: 0, totalPages: 0 };
+  }
+
+  try {
+    const payload = await getPayload({ config: configPromise });
+    const result = await payload.find({
+      collection: "articles",
+      where: { featured: { equals: true } },
+      limit,
+      page: 1,
+      depth: 2,
+      sort: "-publishDate",
+      overrideAccess: true,
+    });
+
+    return result as unknown as PaginatedArticles;
+  } catch (e) {
+    console.error("[getFeaturedArticles] error:", e);
+    return { docs: [], totalDocs: 0, totalPages: 0 };
+  }
 }
 
-export async function getLatestArticles(limit = 20) {
-  return getArticles({ limit, sort: "-publishDate" });
+export async function getLatestArticles(limit = 20): Promise<PaginatedArticles> {
+  if (typeof window !== "undefined") {
+    return { docs: [], totalDocs: 0, totalPages: 0 };
+  }
+
+  try {
+    const payload = await getPayload({ config: configPromise });
+    const result = await payload.find({
+      collection: "articles",
+      limit,
+      page: 1,
+      depth: 2,
+      sort: "-publishDate",
+      overrideAccess: true,
+    });
+
+    return result as unknown as PaginatedArticles;
+  } catch (e) {
+    console.error("[getLatestArticles] error:", e);
+    return { docs: [], totalDocs: 0, totalPages: 0 };
+  }
 }
 
-export async function getCategoryArticles(categorySlug: string, limit = 12, page = 1) {
-  return getArticles({ category: categorySlug, limit, page, sort: "-publishDate" });
+export async function getCategoryArticles(
+  categorySlug: string,
+  limit = 12,
+  page = 1
+): Promise<PaginatedArticles> {
+  if (typeof window !== "undefined") {
+    return { docs: [], totalDocs: 0, totalPages: 0 };
+  }
+
+  try {
+    const payload = await getPayload({ config: configPromise });
+    const result = await payload.find({
+      collection: "articles",
+      where: { "category.slug": { equals: categorySlug } },
+      limit,
+      page,
+      depth: 2,
+      sort: "-publishDate",
+      overrideAccess: true,
+    });
+
+    return result as unknown as PaginatedArticles;
+  } catch (e) {
+    console.error("[getCategoryArticles] error:", e);
+    return { docs: [], totalDocs: 0, totalPages: 0 };
+  }
 }
 
-export async function getRelatedArticles(articleId: string, categorySlug: string, limit = 4) {
-  const q = buildQuery({
-    "category.slug[equals]": categorySlug,
-    "id[not_equals]": articleId,
-    sort: "-publishDate",
-    limit,
-    depth: 2,
-  });
-  return fetchPayload<{ docs: any[] }>(`/articles${q}`);
+export async function getRelatedArticles(articleId: string, categorySlug: string, limit = 4): Promise<PaginatedArticles> {
+  if (typeof window !== "undefined") {
+    return { docs: [], totalDocs: 0, totalPages: 0 };
+  }
+
+  try {
+    const payload = await getPayload({ config: configPromise });
+    const result = await payload.find({
+      collection: "articles",
+      where: {
+        "category.slug": { equals: categorySlug },
+        id: { not_equals: articleId },
+      },
+      limit,
+      page: 1,
+      depth: 2,
+      sort: "-publishDate",
+      overrideAccess: true,
+    });
+
+    return result as unknown as PaginatedArticles;
+  } catch (e) {
+    console.error("[getRelatedArticles] error:", e);
+    return { docs: [], totalDocs: 0, totalPages: 0 };
+  }
 }
 
 // ── Categories ────────────────────────────────────────────────────────────
