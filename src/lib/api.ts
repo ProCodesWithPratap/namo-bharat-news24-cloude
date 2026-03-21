@@ -92,6 +92,15 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
     const match = key.match(/^(.*)\[([^\]]+)\]$/);
     if (!match) continue;
     const [, fieldPath, operator] = match;
+    const orMatch = fieldPath.match(/^or\[(\d+)\]\[(.+)\]$/);
+    if (orMatch) {
+      const [, index, nestedFieldPath] = orMatch;
+      where.or = Array.isArray(where.or) ? where.or : [];
+      where.or[Number(index)] = where.or[Number(index)] || {};
+      setNestedValue(where.or[Number(index)], nestedFieldPath.split("."), operator, parseValue(rawValue));
+      continue;
+    }
+
     setNestedValue(where, fieldPath.split("."), operator, parseValue(rawValue));
   }
 
