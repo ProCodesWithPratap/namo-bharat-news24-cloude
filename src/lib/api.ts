@@ -115,7 +115,7 @@ async function fetchPayloadServer<T>(path: string): Promise<T> {
     overrideAccess: true,
   });
   console.log(`[api] payload.find DONE collection=${collection} docs=${(result as any)?.docs?.length}`);
-  return result as Promise<T>;
+  return result as unknown as T;
 }
 
 async function fetchPayload<T>(
