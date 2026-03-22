@@ -15,13 +15,16 @@ export const revalidate = 0;
 
 
 function validArticles(docs: any[]): any[] {
-  return (docs || []).filter(
-    (a) =>
+  return (docs || []).filter((a) => {
+    const candidateSlug = a?.slug || a?.id;
+
+    return (
       a &&
-      typeof (a.slug || a.id) === "string" &&
-      (a.slug || a.id).trim() !== "" &&
-      (a.slug || a.id) !== "undefined"
-  );
+      typeof candidateSlug === "string" &&
+      candidateSlug.trim() !== "" &&
+      candidateSlug !== "undefined"
+    );
+  });
 }
 
 export const metadata: Metadata = {
