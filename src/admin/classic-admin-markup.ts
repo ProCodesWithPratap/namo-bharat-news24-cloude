@@ -1,6 +1,7 @@
 export const classicAdminMarkup = `<div class="shell">
     <!-- TOPBAR -->
-    <div class="topbar">
+      <div class="topbar">
+      <button class="btn admin-mobile-toggle" id="admin-mobile-toggle" type="button">☰ Menu</button>
       <div class="logo">
         <span class="badge b-red">ULTIMATE SUITE</span>
         नमो: भारत न्यूज़ 24
@@ -13,6 +14,7 @@ export const classicAdminMarkup = `<div class="shell">
         <button class="btn" onclick="resetAll()">↺ Reset</button>
         <button class="btn" onclick="exportConfig()">📤 Export</button>
         <button class="btn btn-red" onclick="publishChanges()">🚀 Publish All</button>
+        <button class="btn" id="admin-logout-btn" type="button">Logout</button>
       </div>
     </div>
 
@@ -78,6 +80,7 @@ export const classicAdminMarkup = `<div class="shell">
         <div class="edit-item" onclick="showPage('dashboard',this)"><div class="edit-icon">📊</div><div><div class="edit-label">Dashboard</div><div class="edit-sub">Overview & stats</div></div></div>
         <div class="edit-item" onclick="showPage('articles',this)"><div class="edit-icon">📰</div><div><div class="edit-label">Articles</div><div class="edit-sub">Manage content</div></div></div>
         <div class="edit-item" onclick="showPage('write',this)"><div class="edit-icon">✍️</div><div><div class="edit-label">Write Article</div><div class="edit-sub">Editor & preview</div></div></div>
+        <div class="edit-item" onclick="showPage('categories',this)"><div class="edit-icon">🗂</div><div><div class="edit-label">Categories</div><div class="edit-sub">Sections & desks</div></div></div>
         <div class="edit-item" onclick="showPage('ai-writer',this)"><div class="edit-icon">🤖</div><div><div class="edit-label">AI Writer</div><div class="edit-sub">Claude AI generator</div></div></div>
         <div class="edit-item" onclick="showPage('comments',this)"><div class="edit-icon">💬</div><div><div class="edit-label">Comments</div><div class="edit-sub">Moderation</div></div></div>
 
@@ -339,29 +342,56 @@ export const classicAdminMarkup = `<div class="shell">
         <div id="page-dashboard" class="page">
           <div class="page-header"><div><div class="pt">📊 Dashboard</div><div class="ps">System overview & statistics</div></div></div>
           <div class="sg">
-            <div class="sc"><div class="sl">Total Visitors</div><div class="sv">12,458</div><div style="font-size:11px;color:var(--green)">↑ 8.2%</div></div>
-            <div class="sc"><div class="sl">Page Views</div><div class="sv">48,392</div><div style="font-size:11px;color:var(--green)">↑ 12%</div></div>
-            <div class="sc"><div class="sl">Subscribers</div><div class="sv">2,847</div><div style="font-size:11px;color:var(--green)">↑ 3.1%</div></div>
-            <div class="sc"><div class="sl">Active Users</div><div class="sv">632</div><div style="font-size:11px;color:var(--green)">↑ 15%</div></div>
+            <div class="sc"><div class="sl">Total Articles</div><div class="sv" id="dashboard-total-articles">—</div><div style="font-size:11px;color:var(--text-secondary)">All published + draft</div></div>
+            <div class="sc"><div class="sl">Published</div><div class="sv" id="dashboard-published-articles">—</div><div style="font-size:11px;color:var(--green)">Live on site</div></div>
+            <div class="sc"><div class="sl">Draft</div><div class="sv" id="dashboard-draft-articles">—</div><div style="font-size:11px;color:var(--orange)">Pending editorial review</div></div>
+            <div class="sc"><div class="sl">Categories</div><div class="sv" id="dashboard-categories-count">—</div><div style="font-size:11px;color:var(--text-secondary)">Available desks</div></div>
           </div>
-          <div class="card"><div class="ct">🔥 Top Articles</div><table class="tbl"><tr><th>Title</th><th>Views</th><th>Status</th></tr><tr><td>चुनाव परिणाम</td><td>12,458</td><td><span class="badge b-green">Live</span></td></tr><tr><td>आर्थिक सुधार</td><td>8,932</td><td><span class="badge b-green">Live</span></td></tr></table></div>
+          <div class="card"><div class="ct">Latest editorial activity</div><table class="tbl" id="dashboard-recent-table"><tr><th>Headline</th><th>Category</th><th>Status</th><th>Updated</th></tr><tr><td colspan="4">Loading…</td></tr></table></div>
         </div>
 
         <div id="page-articles" class="page" style="display:none">
           <div class="page-header"><div><div class="pt">📰 Articles</div></div><button class="btn btn-red">+ New Article</button></div>
-          <div class="card"><div class="ct">All Articles</div><table class="tbl"><tr><th>Title</th><th>Category</th><th>Views</th><th>Status</th></tr><tr><td>चुनाव परिणाम</td><td>Politics</td><td>12,458</td><td><span class="badge b-green">Published</span></td></tr></table></div>
+          <div class="card"><div class="ct">All Articles</div><table class="tbl"><tr><th>Title</th><th>Category</th><th>Updated</th><th>Status</th><th>Actions</th></tr><tr><td colspan="5">Loading…</td></tr></table></div>
         </div>
 
         <div id="page-write" class="page" style="display:none">
-          <div class="page-header"><div><div class="pt">✍️ Write Article</div></div><button class="btn btn-red">Publish</button></div>
+          <div class="page-header"><div><div class="pt">✍️ Write Article</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="save-draft-btn" type="button">Save Draft</button><button class="btn btn-red">Publish</button></div></div>
           <div class="two">
             <div class="card">
-              <div class="form-group"><label>Headline</label><input type="text" placeholder="खबर का शीर्षक..."></div>
-              <div class="form-group"><label>Category</label><select><option>राष्ट्रीय</option><option>राजनीति</option><option>खेल</option></select></div>
-              <div class="form-group"><label>Author</label><select><option>AI News Desk</option><option>Pratap Kumar</option></select></div>
-              <div class="form-group"><label>Body</label><textarea style="min-height:300px" placeholder="Article content..."></textarea></div>
+              <div class="form-group"><label>Hindi Headline *</label><input id="article-headline-hindi" type="text" placeholder="खबर का शीर्षक..."></div>
+              <div class="form-group"><label>English Headline</label><input id="article-headline-english" type="text" placeholder="English headline"></div>
+              <div class="two">
+                <div class="form-group"><label>Slug</label><input id="article-slug" type="text" placeholder="auto-generated-slug"></div>
+                <div class="form-group"><label>Category *</label><select id="article-category"><option value="">Loading categories…</option></select></div>
+              </div>
+              <div class="two">
+                <div class="form-group"><label>Status</label><select id="article-status"><option value="draft">Draft</option><option value="published">Published</option></select></div>
+                <div class="form-group"><label>Publish Date</label><input id="article-publish-date" type="datetime-local"></div>
+              </div>
+              <div class="form-group"><label>Excerpt / Summary</label><textarea id="article-excerpt" style="min-height:90px" placeholder="Short summary..."></textarea></div>
+              <div class="form-group"><label>Article Body *</label><textarea id="article-body" style="min-height:260px" placeholder="Article content..."></textarea></div>
+              <div class="two">
+                <div class="form-group"><label>Featured</label><div class="toggle" id="article-featured-toggle"></div></div>
+                <div class="form-group"><label>Breaking News</label><div class="toggle" id="article-breaking-toggle"></div></div>
+              </div>
+              <div class="form-group"><label>Hero Image</label><div class="upload-zone" id="hero-upload-zone">📤 Click to upload hero image</div><input id="hero-upload-input" type="file" accept="image/*" style="display:none"><div id="hero-upload-meta" style="font-size:11px;color:var(--text-secondary);margin-top:8px">No image selected</div></div>
             </div>
-            <div class="card"><div style="font-size:14px;color:var(--text-secondary)">← Live preview</div></div>
+            <div class="card"><div class="ct">← Live preview</div><iframe id="article-live-preview" title="Article live preview" style="width:100%;min-height:720px;border:1px solid var(--border-light);border-radius:8px;background:#fff"></iframe></div>
+          </div>
+        </div>
+
+        <div id="page-categories" class="page" style="display:none">
+          <div class="page-header"><div><div class="pt">🗂 Categories</div><div class="ps">Manage newsroom sections</div></div></div>
+          <div class="two">
+            <div class="card">
+              <div class="ct">Create Category</div>
+              <div class="form-group"><label>Name (Hindi) *</label><input id="category-name-hindi" type="text" placeholder="उदाहरण: राष्ट्रीय"></div>
+              <div class="form-group"><label>Name (English) *</label><input id="category-name-english" type="text" placeholder="National"></div>
+              <div class="form-group"><label>Slug *</label><input id="category-slug" type="text" placeholder="national"></div>
+              <button class="btn btn-red" id="create-category-btn" type="button">Create Category</button>
+            </div>
+            <div class="card"><div class="ct">All Categories</div><table class="tbl" id="category-list-table"><tr><th>Name</th><th>Slug</th><th>Nav</th></tr><tr><td colspan="3">Loading…</td></tr></table></div>
           </div>
         </div>
 
@@ -484,7 +514,7 @@ export const classicAdminMarkup = `<div class="shell">
 
         <div id="page-media" class="page" style="display:none">
           <div class="page-header"><div><div class="pt">🖼 Media Library</div></div></div>
-          <div class="card"><div class="upload-zone" style="border-radius:8px;padding:40px">📤 Drag & drop images or click to upload</div></div>
+          <div class="card"><div class="upload-zone" style="border-radius:8px;padding:40px">📤 Drag & drop images or click to upload</div><div id="media-upload-help" style="font-size:11px;color:var(--text-secondary);margin-top:10px">Uploads are stored in Payload media and Vercel Blob when configured.</div></div>
         </div>
 
         <div id="page-reporters" class="page" style="display:none">

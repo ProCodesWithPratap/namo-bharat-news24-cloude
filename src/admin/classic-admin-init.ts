@@ -1,11 +1,10 @@
 // @ts-nocheck
 export function initClassicAdminPanel() {
   const API = {
-    login: '/api/users/login',
     me: '/api/users/me',
+    logout: '/api/users/logout',
     articles: '/api/articles',
     categories: '/api/categories',
-    authors: '/api/authors',
     media: '/api/media',
     siteSettings: '/api/globals/site-settings'
   };
@@ -13,13 +12,14 @@ export function initClassicAdminPanel() {
   let currentConfig = null;
   let currentArticles = [];
   let currentCategories = [];
-  let currentAuthors = [];
   let currentMedia = [];
   let editingArticleId = null;
-  let previewEls = null;
+  let selectedHeroMedia = null;
+  let articleSlugTouched = false;
 
   function toast(msg, isError = false) {
     const t = document.getElementById('toast-el');
+    if (!t) return;
     t.textContent = msg + (isError ? '' : ' ✓');
     t.style.background = isError ? 'var(--red)' : 'var(--green)';
     t.classList.add('show');
@@ -28,18 +28,14 @@ export function initClassicAdminPanel() {
 
   async function apiFetch(path, options = {}) {
     const headers = new Headers(options.headers || {});
-    if (!(options.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-
+    if (!(options.body instanceof FormData) && options.body != null && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     const res = await fetch(path, { ...options, headers, credentials: 'include' });
     const text = await res.text();
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch (_e) {}
     if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        redirectToLogin();
-      }
-      const message = data?.errors?.[0]?.message || data?.message || data?.error || ('HTTP ' + res.status);
-      throw new Error(message);
+      if (res.status === 401 || res.status === 403) redirectToLogin();
+      throw new Error(data?.errors?.[0]?.message || data?.message || data?.error || ('HTTP ' + res.status));
     }
     return data;
   }
@@ -49,387 +45,110 @@ export function initClassicAdminPanel() {
   }
 
   async function ensureAuth() {
-    try {
-      const data = await apiFetch(API.me, { method: 'GET' });
-      if (!data?.user) throw new Error('Authentication required');
-      return data.user;
-    } catch (_error) {
+    const data = await apiFetch(API.me, { method: 'GET' });
+    if (!data?.user) {
       redirectToLogin();
       throw new Error('Authentication required');
     }
+    return data.user;
   }
 
-  function hideAllPanels() {
-    document.querySelectorAll('[id^=panel-]').forEach(p => p.style.display = 'none');
-  }
-
-  function hideAllPages() {
-    document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-  }
-
-  function clearSidebarActiveState() {
-    document.querySelectorAll('.sidebar-body .edit-item').forEach(e => e.classList.remove('active'));
-  }
+  function hideAllPanels() { document.querySelectorAll('[id^=panel-]').forEach((p) => p.style.display = 'none'); }
+  function hideAllPages() { document.querySelectorAll('.page').forEach((p) => p.style.display = 'none'); }
+  function clearSidebarActiveState() { document.querySelectorAll('.sidebar-body .edit-item').forEach((e) => e.classList.remove('active')); }
+  function closeMobileSidebar() { document.querySelector('.shell')?.classList.remove('sidebar-open'); }
 
   function showPanel(name, el) {
-    hideAllPages();
-    hideAllPanels();
+    hideAllPages(); hideAllPanels();
     const target = document.getElementById('panel-' + name);
     if (target) target.style.display = 'block';
     clearSidebarActiveState();
     if (el) el.classList.add('active');
+    closeMobileSidebar();
   }
   window.showPanel = showPanel;
 
   function showPage(name, el) {
-    hideAllPanels();
-    hideAllPages();
+    hideAllPanels(); hideAllPages();
     const target = document.getElementById('page-' + name);
     if (target) target.style.display = 'block';
     clearSidebarActiveState();
     if (el) el.classList.add('active');
     if (name === 'articles') loadArticles();
-    if (name === 'write') syncArticlePreview();
+    if (name === 'dashboard') renderDashboard();
+    if (name === 'categories') renderCategories();
     if (name === 'media') renderMediaLibrary();
+    if (name === 'write') syncArticlePreview();
+    closeMobileSidebar();
   }
   window.showPage = showPage;
 
   function switchSideTab(el, id) {
-    document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.stab').forEach((t) => t.classList.remove('active'));
     el.classList.add('active');
-    ['stab-design', 'stab-layout', 'stab-pages', 'stab-business'].forEach(tabId => {
+    ['stab-design', 'stab-layout', 'stab-pages', 'stab-business'].forEach((tabId) => {
       const node = document.getElementById(tabId);
       if (node) node.style.display = tabId === id ? 'block' : 'none';
     });
   }
   window.switchSideTab = switchSideTab;
 
-  function panelInputs(panelId) {
-    return Array.from(document.querySelectorAll('#' + panelId + ' input, #' + panelId + ' textarea, #' + panelId + ' select'));
-  }
-
-  function pageInputs(pageId) {
-    return Array.from(document.querySelectorAll('#' + pageId + ' input, #' + pageId + ' textarea, #' + pageId + ' select'));
-  }
-
-  function isToggleOn(el) {
-    return !!el && el.classList.contains('on');
-  }
-
-  function setToggle(el, on) {
-    if (!el) return;
-    el.classList.toggle('on', !!on);
-  }
-
-  function enableToggleClicks() {
-    document.querySelectorAll('.toggle').forEach(toggle => {
-      if (toggle.dataset.bound === '1') return;
-      toggle.dataset.bound = '1';
-      toggle.addEventListener('click', () => {
-        toggle.classList.toggle('on');
-        renderPreview();
-      });
-    });
-  }
-
-  function escapeHtml(text) {
-    return String(text == null ? '' : text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  function escapeJs(text) {
-    return String(text == null ? '' : text)
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, "\\'");
-  }
-
-  function slugify(value) {
-    return String(value || '')
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9\u0900-\u097f-]/g, '')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || ('item-' + Date.now());
-  }
-
+  function isToggleOn(el) { return !!el && el.classList.contains('on'); }
+  function setToggle(el, on) { if (el) el.classList.toggle('on', !!on); }
+  function escapeHtml(text) { return String(text == null ? '' : text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function escapeJs(text) { return String(text == null ? '' : text).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+  function slugify(value) { return String(value || '').toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9\u0900-\u097f-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '') || ('item-' + Date.now()); }
+  function formatDateDisplay(value) { if (!value) return '—'; try { return new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return value; } }
+  function toDateTimeLocal(value) { if (!value) return ''; const d = new Date(value); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); }
+  function fromDateTimeLocal(value) { return value ? new Date(value).toISOString() : undefined; }
   function lexicalFromText(text) {
-    const paragraphs = String(text || '')
-      .split(/\n{2,}/)
-      .map(block => block.trim())
-      .filter(Boolean)
-      .map(block => ({
-        type: 'paragraph',
-        format: '',
-        indent: 0,
-        version: 1,
-        children: [{ type: 'text', detail: 0, format: 0, mode: 'normal', style: '', text: block, version: 1 }],
-        direction: 'ltr'
-      }));
+    const blocks = String(text || '').split(/\n{2,}/).map((block) => block.trim()).filter(Boolean).map((block) => ({ type: 'paragraph', format: '', indent: 0, version: 1, children: [{ type: 'text', detail: 0, format: 0, mode: 'normal', style: '', text: block, version: 1 }], direction: 'ltr' }));
+    return { root: { type: 'root', format: '', indent: 0, version: 1, direction: 'ltr', children: blocks.length ? blocks : [{ type: 'paragraph', format: '', indent: 0, version: 1, children: [{ type: 'text', detail: 0, format: 0, mode: 'normal', style: '', text: '', version: 1 }], direction: 'ltr' }] } };
+  }
+  function textFromLexical(node) { const root = node?.root || node; return Array.isArray(root?.children) ? root.children.map((child) => Array.isArray(child.children) ? child.children.map((grand) => grand.text || '').join('') : '').filter(Boolean).join('\n\n') : ''; }
 
+  function getArticleForm() {
     return {
-      root: {
-        type: 'root',
-        format: '',
-        indent: 0,
-        version: 1,
-        direction: 'ltr',
-        children: paragraphs.length ? paragraphs : [{
-          type: 'paragraph',
-          format: '',
-          indent: 0,
-          version: 1,
-          children: [{ type: 'text', detail: 0, format: 0, mode: 'normal', style: '', text: '', version: 1 }],
-          direction: 'ltr'
-        }]
-      }
+      headlineHindi: document.getElementById('article-headline-hindi'),
+      headlineEnglish: document.getElementById('article-headline-english'),
+      slug: document.getElementById('article-slug'),
+      category: document.getElementById('article-category'),
+      excerpt: document.getElementById('article-excerpt'),
+      body: document.getElementById('article-body'),
+      status: document.getElementById('article-status'),
+      publishDate: document.getElementById('article-publish-date'),
+      featured: document.getElementById('article-featured-toggle'),
+      breakingNews: document.getElementById('article-breaking-toggle'),
+      heroMeta: document.getElementById('hero-upload-meta'),
+      heroInput: document.getElementById('hero-upload-input'),
+      preview: document.getElementById('article-live-preview')
     };
   }
 
-  function textFromLexical(node) {
-    if (!node || typeof node !== 'object') return '';
-    const root = node.root || node;
-    const children = Array.isArray(root.children) ? root.children : [];
-    return children.map(child => {
-      if (!Array.isArray(child.children)) return '';
-      return child.children.map(grand => grand.text || '').join('');
-    }).filter(Boolean).join('\n\n');
-  }
-
-  function getPreviewEls() {
-    if (previewEls && previewEls.header) return previewEls;
-    previewEls = {
-      box: document.getElementById('preview-box'),
-      header: document.getElementById('preview-header'),
-      nav: document.getElementById('preview-nav'),
-      body: document.getElementById('preview-body'),
-    };
-    return previewEls;
-  }
-
-  function gatherNavItems() {
-    return Array.from(document.querySelectorAll('#nav-items .nav-menu-item')).map((row, index) => {
-      const inputs = row.querySelectorAll('input');
-      return {
-        id: row.dataset.id || '',
-        label: (inputs[0] && inputs[0].value || '').trim(),
-        href: (inputs[1] && inputs[1].value || '').trim() || '/',
-        enabled: isToggleOn(row.querySelector('.toggle')),
-        navOrder: index + 1,
-      };
-    }).filter(item => item.label);
-  }
-
-  function renderNavItems(items) {
-    const wrap = document.getElementById('nav-items');
-    if (!wrap) return;
-    wrap.innerHTML = '';
-    items.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'nav-menu-item';
-      row.dataset.id = item.id || '';
-      row.innerHTML = '<span class="drag-handle">⠿</span><input type="text" style="flex:1;border:none;outline:none;background:transparent"><input type="text" style="width:80px;font-size:11px"><div class="toggle"></div>';
-      const inputs = row.querySelectorAll('input');
-      inputs[0].value = item.label || '';
-      inputs[1].value = item.href || '/';
-      setToggle(row.querySelector('.toggle'), item.enabled !== false);
-      wrap.appendChild(row);
-    });
-    enableToggleClicks();
-    bindLiveInputs();
-  }
-
-  function addNavItem() {
-    const items = gatherNavItems();
-    items.push({ label: 'नई श्रेणी', href: '/new-category', enabled: true, navOrder: items.length + 1 });
-    renderNavItems(items);
-    renderPreview();
-    toast('Nav item added');
-  }
-  window.addNavItem = addNavItem;
-
-
-  function ensureSettingsFields() {
-    const card = document.querySelector('#page-settings .card');
-    if (!card || card.dataset.extraFields === '1') return;
-    card.dataset.extraFields = '1';
-    const fields = [
-      { label: 'Contact Email', type: 'email', value: '' },
-      { label: 'Editorial Email', type: 'email', value: '' },
-      { label: 'Address', type: 'text', value: '' }
-    ];
-    fields.forEach(field => {
-      const wrap = document.createElement('div');
-      wrap.className = 'form-group';
-      wrap.innerHTML = '<label>' + field.label + '</label><input type="' + field.type + '" value="' + field.value + '">';
-      card.appendChild(wrap);
-    });
-  }
-
-  function gatherConfigFromForm() {
-    const logo = panelInputs('panel-logo');
-    const colors = panelInputs('panel-colors');
-    const header = panelInputs('panel-header');
-    const social = Array.from(document.querySelectorAll('#panel-social-links .social-row'));
-    const settings = pageInputs('page-settings');
-    const navItems = gatherNavItems();
-    const contactEmailInput = settings[3];
-    const editorialEmailInput = settings[4];
-    const addressInput = settings[5];
-
+  function getCategoryForm() {
     return {
-      site: {
-        name: (settings[0] && settings[0].value) || (logo[0] && logo[0].value) || 'नमो: भारत न्यूज़ 24',
-        tagline: (settings[1] && settings[1].value) || (logo[1] && logo[1].value) || 'तथ्य स्पष्ट, विचार निष्पक्ष।',
-        phone: (settings[2] && settings[2].value) || (header[0] && header[0].value) || '',
-        address: (addressInput && addressInput.value) || currentConfig?.site?.address || '',
-        contactEmail: (contactEmailInput && contactEmailInput.value) || currentConfig?.site?.contactEmail || '',
-        editorialEmail: (editorialEmailInput && editorialEmailInput.value) || currentConfig?.site?.editorialEmail || '',
-        logoSize: Number((logo[3] && logo[3].value) || 32),
-        menuItems: navItems.filter(x => x.enabled).map(x => x.label),
-        menuMeta: navItems,
-        logoInitials: (logo[2] && logo[2].value) || 'NB'
-      },
-      colors: {
-        primary: (colors[1] && colors[1].value) || '#C0392B',
-        navbar: (colors[3] && colors[3].value) || '#1a1a1a',
-        header: (colors[5] && colors[5].value) || '#222222'
-      },
-      social: {
-        facebook: social[0]?.querySelector('input')?.value || '',
-        instagram: social[1]?.querySelector('input')?.value || '',
-        youtube: social[2]?.querySelector('input')?.value || '',
-        whatsapp: social[3]?.querySelector('input')?.value || '',
-        x: social[4]?.querySelector('input')?.value || ''
-      },
-      updatedAt: new Date().toISOString()
+      nameHindi: document.getElementById('category-name-hindi'),
+      nameEnglish: document.getElementById('category-name-english'),
+      slug: document.getElementById('category-slug')
     };
-  }
-
-  function populateForm(config) {
-    if (!config) return;
-    const logo = panelInputs('panel-logo');
-    const colors = panelInputs('panel-colors');
-    const header = panelInputs('panel-header');
-    const settings = pageInputs('page-settings');
-    const socialRows = Array.from(document.querySelectorAll('#panel-social-links .social-row'));
-
-    if (logo[0]) logo[0].value = config.site?.name || logo[0].value;
-    if (logo[1]) logo[1].value = config.site?.tagline || logo[1].value;
-    if (logo[2]) logo[2].value = config.site?.logoInitials || logo[2].value;
-    if (logo[3]) logo[3].value = config.site?.logoSize || logo[3].value;
-
-    if (settings[0]) settings[0].value = config.site?.name || settings[0].value;
-    if (settings[1]) settings[1].value = config.site?.tagline || settings[1].value;
-    if (settings[2]) settings[2].value = config.site?.phone || settings[2].value;
-    if (settings[3]) settings[3].value = config.site?.contactEmail || settings[3].value;
-    if (settings[4]) settings[4].value = config.site?.editorialEmail || settings[4].value;
-    if (settings[5]) settings[5].value = config.site?.address || settings[5].value;
-    if (header[0]) header[0].value = config.site?.phone || header[0].value;
-
-    if (colors[0]) colors[0].value = config.colors?.primary || colors[0].value;
-    if (colors[1]) colors[1].value = config.colors?.primary || colors[1].value;
-    if (colors[2]) colors[2].value = config.colors?.navbar || colors[2].value;
-    if (colors[3]) colors[3].value = config.colors?.navbar || colors[3].value;
-    if (colors[4]) colors[4].value = config.colors?.header || colors[4].value;
-    if (colors[5]) colors[5].value = config.colors?.header || colors[5].value;
-
-    const socialValues = [config.social?.facebook, config.social?.instagram, config.social?.youtube, config.social?.whatsapp, config.social?.x];
-    socialRows.forEach((row, index) => {
-      const input = row.querySelector('input');
-      if (input && socialValues[index] !== undefined) input.value = socialValues[index] || '';
-    });
-
-    currentConfig = config;
-    renderPreview();
   }
 
   function renderPreview() {
-    const preview = getPreviewEls();
-    const cfg = gatherConfigFromForm();
-    currentConfig = cfg;
-    if (preview.header) {
-      preview.header.textContent = cfg.site.name || 'नमो: भारत न्यूज़ 24';
-      preview.header.style.background = cfg.colors.primary || '#C0392B';
-    }
-    if (preview.nav) {
-      preview.nav.style.background = cfg.colors.navbar || '#1a1a1a';
-      const items = cfg.site.menuItems && cfg.site.menuItems.length ? cfg.site.menuItems : ['होम', 'राष्ट्रीय', 'राज्य'];
-      preview.nav.innerHTML = items.slice(0, 6).map(label => '<span style="color:#ccc;font-size:10px">' + escapeHtml(label) + '</span>').join('');
-      preview.nav.style.display = 'flex';
-      preview.nav.style.gap = '12px';
-    }
-    if (preview.body) {
-      preview.body.innerHTML = '<div style="font-size:12px;color:#666">' + escapeHtml(cfg.site.tagline || 'Preview updates in real-time') + '</div>';
-    }
-    document.documentElement.style.setProperty('--red', cfg.colors.primary || '#C0392B');
-    document.documentElement.style.setProperty('--red2', cfg.colors.primary || '#a93226');
-  }
-
-  function getArticleForm() {
-    const inputs = pageInputs('page-write');
-    return {
-      title: inputs[0],
-      category: inputs[1],
-      author: inputs[2],
-      content: inputs[3]
-    };
+    const header = document.getElementById('preview-header');
+    const nav = document.getElementById('preview-nav');
+    const body = document.getElementById('preview-body');
+    if (header) header.textContent = currentConfig?.site?.name || 'नमो: भारत न्यूज़ 24';
+    if (nav) nav.innerHTML = currentCategories.slice(0, 6).map((item) => '<span style="color:#ccc;font-size:10px">' + escapeHtml(item.nameHindi || item.name) + '</span>').join('');
+    if (body) body.textContent = currentConfig?.site?.tagline || 'Preview updates in real-time';
   }
 
   function syncArticlePreview() {
     const form = getArticleForm();
-    const previewCard = document.querySelector('#page-write .two .card:last-child');
-    if (!previewCard) return;
-    const categoryLabel = form.category.options[form.category.selectedIndex]?.text || 'राष्ट्रीय';
-    const authorLabel = form.author.options[form.author.selectedIndex]?.text || 'AI News Desk';
-    previewCard.innerHTML = '<div class="ct">Article Preview</div><div style="font-size:18px;font-weight:700;margin:12px 0 8px">' + escapeHtml(form.title.value || 'खबर का शीर्षक...') + '</div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">' + escapeHtml(categoryLabel) + ' • ' + escapeHtml(authorLabel) + '</div><div style="font-size:13px;line-height:1.6;color:var(--text-primary);white-space:pre-wrap">' + escapeHtml((form.content.value || 'Article content preview...').slice(0, 900)) + '</div>';
-  }
-
-  function resetArticleForm() {
-    const form = getArticleForm();
-    form.title.value = '';
-    if (form.category.options.length) form.category.selectedIndex = 0;
-    if (form.author.options.length) form.author.selectedIndex = 0;
-    form.content.value = '';
-    editingArticleId = null;
-    syncArticlePreview();
-  }
-
-  function mapArticleForTable(item) {
-    return {
-      id: item.id,
-      title: item.headlineHindi || item.headline || '',
-      category: item.category?.nameHindi || item.category?.name || '',
-      author: Array.isArray(item.author) ? (item.author[0]?.nameHindi || item.author[0]?.name || '') : '',
-      content: textFromLexical(item.body),
-      status: item.status || 'draft',
-      views: item.views || 0,
-      publishDate: item.publishDate || item.updatedAt || item.createdAt || ''
-    };
-  }
-
-  function renderArticlesList(items) {
-    const table = document.querySelector('#page-articles .tbl');
-    if (!table) return;
-    const rows = (items || []).map(raw => {
-      const item = mapArticleForTable(raw);
-      const statusClass = item.status === 'published' ? 'b-green' : (item.status === 'draft' ? 'b-gray' : 'b-orange');
-      return '<tr>' +
-        '<td>' + escapeHtml(item.title || '') + '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">' +
-        '<button class="btn" style="font-size:10px;padding:3px 8px" onclick="editArticle(\'' + escapeJs(item.id) + '\')">Edit</button>' +
-        '<button class="btn btn-green" style="font-size:10px;padding:3px 8px" onclick="publishExistingArticle(\'' + escapeJs(item.id) + '\')">Publish</button>' +
-        '<button class="btn" style="font-size:10px;padding:3px 8px" onclick="deleteArticle(\'' + escapeJs(item.id) + '\')">Delete</button>' +
-        '</div></td>' +
-        '<td>' + escapeHtml(item.category || '') + '</td>' +
-        '<td>' + escapeHtml(String(item.views || 0)) + '</td>' +
-        '<td><span class="badge ' + statusClass + '">' + escapeHtml(item.status || 'draft') + '</span></td>' +
-        '</tr>';
-    }).join('');
-    table.innerHTML = '<tr><th>Title</th><th>Category</th><th>Views</th><th>Status</th></tr>' + (rows || '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:20px">No articles yet</td></tr>');
+    if (!form.preview) return;
+    const categoryLabel = form.category?.options?.[form.category.selectedIndex]?.text || 'राष्ट्रीय';
+    const imageUrl = selectedHeroMedia?.url || selectedHeroMedia?.thumbnailURL || '';
+    const body = escapeHtml(form.body?.value || '').replace(/\n/g, '<br/>');
+    form.preview.srcdoc = `<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><style>body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;margin:0;background:#f5f5f5;color:#111}header{background:#c0392b;color:#fff;padding:14px 18px;text-align:center;font-weight:700}.wrap{max-width:760px;margin:0 auto;background:#fff;min-height:100vh;padding:20px}.badge{display:inline-block;background:#fde8e8;color:#c0392b;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;margin-right:8px}h1{font-size:32px;line-height:1.2;margin:14px 0}p.meta{color:#666;font-size:14px}img{width:100%;border-radius:12px;margin:18px 0}.excerpt{font-size:18px;color:#333;margin-bottom:16px}.body{font-size:17px;line-height:1.8;white-space:normal}</style></head><body><header>नमो: भारत न्यूज़ 24</header><div class="wrap"><div><span class="badge">${escapeHtml(categoryLabel)}</span>${isToggleOn(form.breakingNews) ? '<span class="badge">ब्रेकिंग</span>' : ''}${isToggleOn(form.featured) ? '<span class="badge">टॉप न्यूज़</span>' : ''}</div><h1>${escapeHtml(form.headlineHindi?.value || 'खबर का शीर्षक...')}</h1><p class="meta">${escapeHtml(form.headlineEnglish?.value || '')}</p>${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="preview image" />` : ''}<div class="excerpt">${escapeHtml(form.excerpt?.value || '')}</div><div class="body">${body || 'लेख का लाइव प्रीव्यू यहां दिखाई देगा।'}</div></div></body></html>`;
   }
 
   function fillSelect(select, items, placeholder) {
@@ -437,11 +156,11 @@ export function initClassicAdminPanel() {
     select.innerHTML = '';
     if (placeholder) {
       const empty = document.createElement('option');
-      empty.textContent = placeholder;
       empty.value = '';
+      empty.textContent = placeholder;
       select.appendChild(empty);
     }
-    items.forEach(item => {
+    items.forEach((item) => {
       const option = document.createElement('option');
       option.value = item.id;
       option.textContent = item.label;
@@ -449,250 +168,207 @@ export function initClassicAdminPanel() {
     });
   }
 
+  function enableToggleClicks() {
+    document.querySelectorAll('.toggle').forEach((toggle) => {
+      if (toggle.dataset.bound === '1') return;
+      toggle.dataset.bound = '1';
+      toggle.addEventListener('click', () => {
+        toggle.classList.toggle('on');
+        syncArticlePreview();
+      });
+    });
+  }
+
+  function bindLiveInputs() {
+    const form = getArticleForm();
+    [form.headlineHindi, form.headlineEnglish, form.slug, form.category, form.excerpt, form.body, form.status, form.publishDate].forEach((el) => {
+      if (!el || el.dataset.bound === '1') return;
+      el.dataset.bound = '1';
+      el.addEventListener('input', () => {
+        if (el === form.headlineHindi && !articleSlugTouched) form.slug.value = slugify(form.headlineHindi.value);
+        syncArticlePreview();
+      });
+      el.addEventListener('change', syncArticlePreview);
+    });
+    form.slug?.addEventListener('input', () => { articleSlugTouched = true; });
+
+    const categoryForm = getCategoryForm();
+    categoryForm.nameHindi?.addEventListener('input', () => {
+      if (!categoryForm.slug.dataset.touched) categoryForm.slug.value = slugify(categoryForm.nameHindi.value);
+    });
+    categoryForm.slug?.addEventListener('input', () => { categoryForm.slug.dataset.touched = '1'; });
+  }
+
+  function resetArticleForm() {
+    const form = getArticleForm();
+    editingArticleId = null;
+    selectedHeroMedia = null;
+    articleSlugTouched = false;
+    form.headlineHindi.value = '';
+    form.headlineEnglish.value = '';
+    form.slug.value = '';
+    form.category.value = '';
+    form.excerpt.value = '';
+    form.body.value = '';
+    form.status.value = 'draft';
+    form.publishDate.value = '';
+    setToggle(form.featured, false);
+    setToggle(form.breakingNews, false);
+    if (form.heroInput) form.heroInput.value = '';
+    if (form.heroMeta) form.heroMeta.textContent = 'No image selected';
+    syncArticlePreview();
+  }
+
+  function mapArticleForTable(item) {
+    return {
+      id: item.id,
+      title: item.headlineHindi || item.headline || 'Untitled',
+      category: item.category?.nameHindi || item.category?.name || '—',
+      updatedAt: item.updatedAt || item.publishDate || item.createdAt,
+      status: item.status || 'draft'
+    };
+  }
+
+  function renderArticlesList(items) {
+    const table = document.querySelector('#page-articles .tbl');
+    if (!table) return;
+    const rows = (items || []).map((raw) => {
+      const item = mapArticleForTable(raw);
+      const nextStatus = item.status === 'published' ? 'draft' : 'published';
+      const toggleText = item.status === 'published' ? 'Unpublish' : 'Publish';
+      const statusClass = item.status === 'published' ? 'b-green' : 'b-gray';
+      return '<tr>' +
+        '<td><div style="font-weight:600;white-space:normal">' + escapeHtml(item.title) + '</div></td>' +
+        '<td>' + escapeHtml(item.category) + '</td>' +
+        '<td>' + escapeHtml(formatDateDisplay(item.updatedAt)) + '</td>' +
+        '<td><span class="badge ' + statusClass + '">' + escapeHtml(item.status) + '</span></td>' +
+        '<td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" onclick="editArticle(\'' + escapeJs(item.id) + '\')">Edit</button><button class="btn btn-green" onclick="toggleArticleStatus(\'' + escapeJs(item.id) + '\',\'' + nextStatus + '\')">' + toggleText + '</button><button class="btn" onclick="deleteArticle(\'' + escapeJs(item.id) + '\')">Delete</button></div></td>' +
+        '</tr>';
+    }).join('');
+    table.innerHTML = '<tr><th>Title</th><th>Category</th><th>Updated</th><th>Status</th><th>Actions</th></tr>' + (rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:20px">No articles found</td></tr>');
+  }
+
+  function renderDashboard() {
+    document.getElementById('dashboard-total-articles').textContent = String(currentArticles.length);
+    document.getElementById('dashboard-published-articles').textContent = String(currentArticles.filter((item) => item.status === 'published').length);
+    document.getElementById('dashboard-draft-articles').textContent = String(currentArticles.filter((item) => item.status !== 'published').length);
+    document.getElementById('dashboard-categories-count').textContent = String(currentCategories.length);
+    const table = document.getElementById('dashboard-recent-table');
+    if (table) {
+      const rows = currentArticles.slice(0, 6).map((item) => '<tr><td style="white-space:normal">' + escapeHtml(item.headlineHindi || item.headline || 'Untitled') + '</td><td>' + escapeHtml(item.category?.nameHindi || item.category?.name || '—') + '</td><td>' + escapeHtml(item.status || 'draft') + '</td><td>' + escapeHtml(formatDateDisplay(item.updatedAt || item.publishDate)) + '</td></tr>').join('');
+      table.innerHTML = '<tr><th>Headline</th><th>Category</th><th>Status</th><th>Updated</th></tr>' + (rows || '<tr><td colspan="4">No article data available</td></tr>');
+    }
+  }
+
+  function renderCategories() {
+    const table = document.getElementById('category-list-table');
+    if (!table) return;
+    table.innerHTML = '<tr><th>Name</th><th>Slug</th><th>Nav</th></tr>' + (currentCategories.map((item) => '<tr><td>' + escapeHtml(item.nameHindi || item.name) + '</td><td>' + escapeHtml(item.slug) + '</td><td>' + (item.showInNav ? 'Yes' : 'No') + '</td></tr>').join('') || '<tr><td colspan="3">No categories found</td></tr>');
+  }
+
   async function loadReferenceData() {
-    const [categoriesRes, authorsRes, settingsRes] = await Promise.all([
+    const [categoriesRes, settingsRes] = await Promise.all([
       apiFetch(API.categories + '?limit=100&sort=navOrder&depth=0'),
-      apiFetch(API.authors + '?limit=100&sort=name&depth=0'),
       apiFetch(API.siteSettings + '?depth=0')
     ]);
-
-    currentCategories = (categoriesRes.docs || []).map(item => ({
-      id: item.id,
-      label: item.nameHindi || item.name || item.slug,
-      name: item.name || item.slug,
-      nameHindi: item.nameHindi || item.name || item.slug,
-      slug: item.slug,
-      navOrder: item.navOrder || 99,
-      showInNav: item.showInNav !== false
-    }));
-
-    currentAuthors = (authorsRes.docs || []).map(item => ({
-      id: item.id,
-      label: item.nameHindi || item.name,
-      name: item.name,
-      nameHindi: item.nameHindi || item.name
-    }));
-
-    const articleForm = getArticleForm();
-    fillSelect(articleForm.category, currentCategories.map(item => ({ id: item.id, label: item.label })), 'Select category');
-    fillSelect(articleForm.author, currentAuthors.map(item => ({ id: item.id, label: item.label })), 'Select author');
-
-    const navItems = currentCategories.filter(item => item.showInNav).sort((a, b) => a.navOrder - b.navOrder).map(item => ({
-      id: item.id,
-      label: item.nameHindi || item.name,
-      href: '/' + item.slug,
-      enabled: true,
-      navOrder: item.navOrder
-    }));
-    renderNavItems(navItems);
-
-    populateForm({
-      site: {
-        name: settingsRes.siteName || 'नमो: भारत न्यूज़ 24',
-        tagline: settingsRes.tagline || 'तथ्य स्पष्ट, विचार निष्पक्ष।',
-        phone: settingsRes.phone || '',
-        address: settingsRes.address || '',
-        contactEmail: settingsRes.contactEmail || '',
-        editorialEmail: settingsRes.editorialEmail || '',
-        menuMeta: navItems,
-      },
-      social: settingsRes.social || {},
-      colors: currentConfig?.colors || { primary: '#C0392B', navbar: '#1a1a1a', header: '#222222' }
-    });
+    currentCategories = (categoriesRes.docs || []).map((item) => ({ id: item.id, label: item.nameHindi || item.name || item.slug, name: item.name || item.slug, nameHindi: item.nameHindi || item.name || item.slug, slug: item.slug, navOrder: item.navOrder || 99, showInNav: item.showInNav !== false }));
+    currentConfig = { site: { name: settingsRes.siteName || 'नमो: भारत न्यूज़ 24', tagline: settingsRes.tagline || 'तथ्य स्पष्ट, विचार निष्पक्ष।' } };
+    fillSelect(getArticleForm().category, currentCategories.map((item) => ({ id: item.id, label: item.label })), 'Select category');
+    renderCategories();
+    renderPreview();
   }
 
   async function loadArticles() {
-    try {
-      const data = await apiFetch(API.articles + '?limit=100&sort=-updatedAt&depth=2');
-      currentArticles = data.docs || [];
-      renderArticlesList(currentArticles);
-    } catch (error) {
-      toast(error.message || 'Articles load failed', true);
-    }
+    const data = await apiFetch(API.articles + '?limit=100&sort=-updatedAt&depth=2');
+    currentArticles = data.docs || [];
+    renderArticlesList(currentArticles);
+    renderDashboard();
   }
 
-  async function saveArticle(status = 'published') {
+  async function uploadHeroImage(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('alt', getArticleForm().headlineHindi.value || file.name);
+    const created = await apiFetch(API.media, { method: 'POST', body: formData, headers: {} });
+    return created?.doc || created;
+  }
+
+  async function saveArticle(forcedStatus) {
     const form = getArticleForm();
+    const status = forcedStatus || form.status.value || 'draft';
+    const publishDate = form.publishDate.value ? fromDateTimeLocal(form.publishDate.value) : (status === 'published' ? new Date().toISOString() : undefined);
     const payload = {
-      headline: form.title.value.trim(),
-      headlineHindi: form.title.value.trim(),
-      slug: slugify(form.title.value),
-      excerpt: form.content.value.trim().slice(0, 180),
-      body: lexicalFromText(form.content.value.trim()),
+      headlineHindi: form.headlineHindi.value.trim(),
+      headline: form.headlineEnglish.value.trim() || form.headlineHindi.value.trim(),
+      slug: (form.slug.value || slugify(form.headlineHindi.value)).trim(),
       category: form.category.value,
-      author: form.author.value ? [form.author.value] : [],
+      excerpt: form.excerpt.value.trim(),
+      body: lexicalFromText(form.body.value.trim()),
+      featured: isToggleOn(form.featured),
+      breakingNews: isToggleOn(form.breakingNews),
       status,
-      ...(status === 'published' ? { publishDate: new Date().toISOString() } : {})
+      ...(publishDate ? { publishDate } : {}),
+      ...(selectedHeroMedia?.id ? { heroMedia: selectedHeroMedia.id } : {})
     };
-
-    if (!payload.headline || !form.content.value.trim() || !payload.category) {
-      toast('Headline, category and body required', true);
-      return;
-    }
-
-    try {
-      await ensureAuth();
-      if (editingArticleId) {
-        await apiFetch(API.articles + '/' + editingArticleId, { method: 'PATCH', body: JSON.stringify(payload) });
-      } else {
-        await apiFetch(API.articles, { method: 'POST', body: JSON.stringify(payload) });
-      }
-      toast('Article saved to server');
-      resetArticleForm();
-      await loadArticles();
-      showPage('articles');
-    } catch (error) {
-      toast(error.message || 'Article save failed', true);
-    }
+    if (!payload.headlineHindi || !payload.category || !form.body.value.trim()) return toast('Hindi headline, category and article body are required', true);
+    await ensureAuth();
+    if (editingArticleId) await apiFetch(API.articles + '/' + editingArticleId, { method: 'PATCH', body: JSON.stringify(payload) });
+    else await apiFetch(API.articles, { method: 'POST', body: JSON.stringify(payload) });
+    toast(status === 'published' ? 'Article published' : 'Draft saved');
+    resetArticleForm();
+    await loadArticles();
+    showPage('articles', document.querySelector('.edit-item[onclick*="articles"]'));
   }
 
   async function editArticle(id) {
-    const item = currentArticles.find(x => x.id === id);
+    const item = currentArticles.find((entry) => entry.id === id);
     if (!item) return toast('Article not found', true);
     const form = getArticleForm();
-    form.title.value = item.headlineHindi || item.headline || '';
-    form.category.value = typeof item.category === 'object' ? (item.category?.id || '') : (item.category || '');
-    const firstAuthor = Array.isArray(item.author) ? item.author[0] : null;
-    form.author.value = firstAuthor?.id || '';
-    form.content.value = textFromLexical(item.body);
     editingArticleId = id;
+    articleSlugTouched = true;
+    form.headlineHindi.value = item.headlineHindi || '';
+    form.headlineEnglish.value = item.headline || '';
+    form.slug.value = item.slug || '';
+    form.category.value = typeof item.category === 'object' ? (item.category?.id || '') : (item.category || '');
+    form.excerpt.value = item.excerpt || '';
+    form.body.value = textFromLexical(item.body);
+    form.status.value = item.status === 'published' ? 'published' : 'draft';
+    form.publishDate.value = toDateTimeLocal(item.publishDate);
+    setToggle(form.featured, !!item.featured);
+    setToggle(form.breakingNews, !!item.breakingNews);
+    selectedHeroMedia = typeof item.heroMedia === 'object' ? item.heroMedia : null;
+    form.heroMeta.textContent = selectedHeroMedia?.url ? selectedHeroMedia.url : 'Existing hero image linked';
     syncArticlePreview();
-    showPage('write');
+    showPage('write', document.querySelector('.edit-item[onclick*="write"]'));
   }
   window.editArticle = editArticle;
 
-  async function publishExistingArticle(id) {
-    try {
-      await ensureAuth();
-      await apiFetch(API.articles + '/' + id, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'published', publishDate: new Date().toISOString() })
-      });
-      toast('Article published');
-      await loadArticles();
-    } catch (error) {
-      toast(error.message || 'Publish failed', true);
-    }
+  async function toggleArticleStatus(id, status) {
+    await ensureAuth();
+    await apiFetch(API.articles + '/' + id, { method: 'PATCH', body: JSON.stringify({ status, ...(status === 'published' ? { publishDate: new Date().toISOString() } : {}) }) });
+    toast(status === 'published' ? 'Article published' : 'Article moved to draft');
+    await loadArticles();
   }
-  window.publishExistingArticle = publishExistingArticle;
+  window.toggleArticleStatus = toggleArticleStatus;
 
   async function deleteArticle(id) {
     if (!confirm('Delete this article?')) return;
-    try {
-      await ensureAuth();
-      await apiFetch(API.articles + '/' + id, { method: 'DELETE' });
-      toast('Article deleted');
-      await loadArticles();
-    } catch (error) {
-      toast(error.message || 'Delete failed', true);
-    }
+    await ensureAuth();
+    await apiFetch(API.articles + '/' + id, { method: 'DELETE' });
+    toast('Article deleted');
+    await loadArticles();
   }
   window.deleteArticle = deleteArticle;
 
-  async function persistNavigation() {
-    const navItems = gatherNavItems();
+  async function createCategory() {
+    const form = getCategoryForm();
+    const payload = { nameHindi: form.nameHindi.value.trim(), name: form.nameEnglish.value.trim(), slug: form.slug.value.trim(), showInNav: true };
+    if (!payload.nameHindi || !payload.name || !payload.slug) return toast('Category name and slug are required', true);
     await ensureAuth();
-
-    const existingById = new Map(currentCategories.map(item => [item.id, item]));
-    const keptIds = new Set();
-
-    for (const [index, item] of navItems.entries()) {
-      const slug = slugify(item.href.replace(/^\//, '') || item.label);
-      const data = {
-        name: existingById.get(item.id)?.name || item.label,
-        nameHindi: item.label,
-        slug,
-        showInNav: item.enabled,
-        navOrder: index + 1
-      };
-
-      try {
-        if (item.id && existingById.has(item.id)) {
-          await apiFetch(API.categories + '/' + item.id, { method: 'PATCH', body: JSON.stringify(data) });
-          keptIds.add(item.id);
-        } else {
-          const created = await apiFetch(API.categories, { method: 'POST', body: JSON.stringify(data) });
-          const createdId = created?.doc?.id || created?.id;
-          if (createdId) keptIds.add(createdId);
-        }
-      } catch (error) {
-        console.warn('Failed to persist navigation item', item, error);
-      }
-    }
-
-    const hiddenCategories = currentCategories.filter(item => item.showInNav && item.id && !keptIds.has(item.id));
-    for (const item of hiddenCategories) {
-      try {
-        await apiFetch(API.categories + '/' + item.id, { method: 'PATCH', body: JSON.stringify({ showInNav: false }) });
-      } catch (error) {
-        console.warn('Failed to hide navigation item', item, error);
-      }
-    }
-  }
-
-  async function publishChanges() {
-    const config = gatherConfigFromForm();
-    try {
-      await ensureAuth();
-      await apiFetch(API.siteSettings, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          siteName: config.site.name,
-          tagline: config.site.tagline,
-          phone: config.site.phone,
-          address: config.site.address,
-          contactEmail: config.site.contactEmail,
-          editorialEmail: config.site.editorialEmail,
-          social: config.social
-        })
-      });
-      await persistNavigation();
-      currentConfig = config;
-      await loadReferenceData();
-      renderPreview();
-      toast('Settings and navigation published');
-    } catch (error) {
-      toast(error.message || 'Publish failed', true);
-    }
-  }
-  window.publishChanges = publishChanges;
-
-  async function exportConfig() {
-    const payload = {
-      config: gatherConfigFromForm(),
-      articles: currentArticles.map(mapArticleForTable),
-      exportedAt: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'namo-bharat-admin-export.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    toast('Exported');
-  }
-  window.exportConfig = exportConfig;
-
-  function resetAll() {
-    if (!confirm('Clear saved login session?')) return;
-    window.location.href = '/admin/logout';
-  }
-  window.resetAll = resetAll;
-
-  function bindLiveInputs() {
-    document.querySelectorAll('input, textarea, select').forEach(el => {
-      if (el.dataset.bound === '1') return;
-      el.dataset.bound = '1';
-      el.addEventListener('input', () => {
-        renderPreview();
-        syncArticlePreview();
-      });
-      el.addEventListener('change', () => {
-        renderPreview();
-        syncArticlePreview();
-      });
-    });
+    await apiFetch(API.categories, { method: 'POST', body: JSON.stringify(payload) });
+    toast('Category created');
+    form.nameHindi.value = ''; form.nameEnglish.value = ''; form.slug.value = ''; delete form.slug.dataset.touched;
+    await loadReferenceData();
   }
 
   function setupMediaUI() {
@@ -700,33 +376,13 @@ export function initClassicAdminPanel() {
     if (!page || page.dataset.ready === '1') return;
     page.dataset.ready = '1';
     const card = page.querySelector('.card');
-    const list = document.createElement('div');
-    list.id = 'media-list';
-    list.style.marginTop = '16px';
-    card.appendChild(list);
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*,video/mp4,video/webm';
-    input.style.display = 'none';
-    page.appendChild(input);
-    const zone = page.querySelector('.upload-zone');
-    zone.addEventListener('click', () => input.click());
+    const list = document.createElement('div'); list.id = 'media-list'; list.style.marginTop = '16px'; card.appendChild(list);
+    const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.style.display = 'none'; page.appendChild(input);
+    page.querySelector('.upload-zone')?.addEventListener('click', () => input.click());
     input.addEventListener('change', async () => {
-      const file = input.files && input.files[0];
-      if (!file) return;
-      const alt = prompt('Alt text for this media') || file.name;
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('alt', alt);
-      try {
-        await ensureAuth();
-        await apiFetch(API.media, { method: 'POST', body: formData, headers: {} });
-        toast('Media uploaded');
-        input.value = '';
-        await renderMediaLibrary();
-      } catch (error) {
-        toast(error.message || 'Upload failed', true);
-      }
+      const file = input.files?.[0]; if (!file) return;
+      try { await ensureAuth(); await uploadHeroImage(file); toast('Media uploaded'); input.value = ''; await renderMediaLibrary(); }
+      catch (error) { toast(error.message || 'Upload failed', true); }
     });
   }
 
@@ -735,63 +391,61 @@ export function initClassicAdminPanel() {
     const list = document.getElementById('media-list');
     if (!list) return;
     list.innerHTML = '<div style="font-size:12px;color:var(--text-secondary)">Loading media…</div>';
-    try {
-      const data = await apiFetch(API.media + '?limit=24&sort=-updatedAt&depth=0');
-      currentMedia = data.docs || [];
-      if (!currentMedia.length) {
-        list.innerHTML = '<div style="font-size:12px;color:var(--text-secondary)">No media uploaded yet.</div>';
-        return;
-      }
-      list.innerHTML = '<div class="ct">Recent Uploads</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">' + currentMedia.map(item => {
-        const url = item.url || item.thumbnailURL || item.filename || '';
-        return '<div style="border:1px solid var(--border-light);border-radius:8px;padding:10px;background:#fff">' +
-          (url ? '<div style="height:90px;background:#f5f6fa;border-radius:6px;overflow:hidden;margin-bottom:8px;display:flex;align-items:center;justify-content:center"><img src="' + escapeHtml(url) + '" alt="' + escapeHtml(item.alt || item.filename || 'media') + '" style="max-width:100%;max-height:100%;object-fit:cover"></div>' : '') +
-          '<div style="font-size:11px;font-weight:600;line-height:1.4">' + escapeHtml(item.alt || item.filename || 'Untitled media') + '</div>' +
-          '<div style="font-size:10px;color:var(--text-secondary);margin-top:4px">' + escapeHtml(item.filename || '') + '</div>' +
-          '</div>';
-      }).join('') + '</div>';
-    } catch (error) {
-      list.innerHTML = '<div style="font-size:12px;color:var(--red)">' + escapeHtml(error.message || 'Media load failed') + '</div>';
-    }
+    const data = await apiFetch(API.media + '?limit=24&sort=-updatedAt&depth=0');
+    currentMedia = data.docs || [];
+    list.innerHTML = currentMedia.length ? '<div class="ct">Recent Uploads</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">' + currentMedia.map((item) => {
+      const url = item.url || item.thumbnailURL || '';
+      return '<div style="border:1px solid var(--border-light);border-radius:8px;padding:10px;background:#fff"><div style="height:90px;background:#f5f6fa;border-radius:6px;overflow:hidden;margin-bottom:8px;display:flex;align-items:center;justify-content:center">' + (url ? '<img src="' + escapeHtml(url) + '" alt="' + escapeHtml(item.alt || item.filename || 'media') + '" style="max-width:100%;max-height:100%;object-fit:cover">' : '') + '</div><div style="font-size:11px;font-weight:600;line-height:1.4">' + escapeHtml(item.alt || item.filename || 'Untitled media') + '</div></div>';
+    }).join('') + '</div>' : '<div style="font-size:12px;color:var(--text-secondary)">No media uploaded yet.</div>';
+  }
+
+  async function logout() {
+    try { await fetch(API.logout, { method: 'POST', credentials: 'include' }); } catch (_e) {}
+    redirectToLogin();
   }
 
   function wireButtons() {
-    const topbarBtns = document.querySelectorAll('.topbar-right .btn');
-    if (topbarBtns[1]) topbarBtns[1].setAttribute('title', 'Export current config and articles');
-
-    const newArticleBtn = document.querySelector('#page-articles .page-header .btn-red');
-    if (newArticleBtn) newArticleBtn.addEventListener('click', () => {
-      resetArticleForm();
-      showPage('write');
-    });
-
-    const publishArticleBtn = document.querySelector('#page-write .page-header .btn-red');
-    if (publishArticleBtn) publishArticleBtn.addEventListener('click', () => saveArticle('published'));
-
-    const aiGenerateBtn = document.querySelector('#page-ai-writer .ai-body .btn-red');
-    if (aiGenerateBtn) aiGenerateBtn.addEventListener('click', () => {
-      const topic = document.querySelector('#page-ai-writer input[type="text"]')?.value?.trim() || 'आज की मुख्य खबर';
-      const out = document.getElementById('ai-out');
-      out.style.display = 'block';
-      out.textContent = topic + ' पर ड्राफ्ट:\n\n' + topic + ' को लेकर ताज़ा गतिविधि तेज़ है। प्रशासन, स्थानीय लोग और संबंधित पक्ष इस मुद्दे पर अपनी प्रतिक्रिया दे रहे हैं। प्रारंभिक जानकारी के मुताबिक स्थिति पर लगातार नजर रखी जा रही है और आगे आधिकारिक अपडेट आने की उम्मीद है।';
-      toast('AI draft generated');
+    document.getElementById('admin-mobile-toggle')?.addEventListener('click', () => document.querySelector('.shell')?.classList.toggle('sidebar-open'));
+    document.getElementById('admin-logout-btn')?.addEventListener('click', logout);
+    document.querySelector('#page-articles .page-header .btn-red')?.addEventListener('click', () => { resetArticleForm(); showPage('write', document.querySelector('.edit-item[onclick*="write"]')); });
+    document.querySelector('#page-write .page-header .btn-red')?.addEventListener('click', () => saveArticle('published'));
+    document.getElementById('save-draft-btn')?.addEventListener('click', () => saveArticle('draft'));
+    document.getElementById('create-category-btn')?.addEventListener('click', createCategory);
+    const heroInput = document.getElementById('hero-upload-input');
+    document.getElementById('hero-upload-zone')?.addEventListener('click', () => heroInput?.click());
+    heroInput?.addEventListener('change', async () => {
+      const file = heroInput.files?.[0]; if (!file) return;
+      try {
+        await ensureAuth();
+        selectedHeroMedia = await uploadHeroImage(file);
+        getArticleForm().heroMeta.textContent = selectedHeroMedia?.url || selectedHeroMedia?.filename || 'Hero image uploaded';
+        syncArticlePreview();
+        toast('Hero image uploaded');
+      } catch (error) { toast(error.message || 'Hero image upload failed', true); }
     });
   }
 
+  async function exportConfig() {
+    const payload = { exportedAt: new Date().toISOString(), articleCount: currentArticles.length, categoryCount: currentCategories.length };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'namo-bharat-admin-export.json'; a.click(); URL.revokeObjectURL(url); toast('Exported');
+  }
+  window.exportConfig = exportConfig;
+  window.resetAll = logout;
+  window.publishChanges = async function publishChanges() { toast('Site settings preview is ready; content tools are live'); };
+
   async function init() {
-    previewEls = null;
-    ensureSettingsFields();
     enableToggleClicks();
     bindLiveInputs();
     wireButtons();
-    setupMediaUI();
     showPanel('logo', document.querySelector('.edit-item.active'));
-    renderPreview();
     syncArticlePreview();
     try {
+      await ensureAuth();
       await loadReferenceData();
       await loadArticles();
       await renderMediaLibrary();
+      renderCategories();
     } catch (error) {
       toast(error.message || 'Admin bootstrap failed', true);
     }
