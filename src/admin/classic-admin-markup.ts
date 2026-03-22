@@ -413,7 +413,7 @@ export const classicAdminMarkup = `<div class="shell">
 
         <div id="page-comments" class="page" style="display:none">
           <div class="page-header"><div><div class="pt">💬 Comments</div><div class="ps">Pending: 12</div></div></div>
-          <div class="card"><table class="tbl"><tr><th>User</th><th>Comment</th><th>Article</th><th>Action</th></tr><tr><td>राज कुमार</td><td>बहुत अच्छी खबर...</td><td>चुनाव परिणाम</td><td><button class="btn btn-green" style="font-size:10px;padding:3px 8px">Approve</button></td></tr></table></div>
+          <div class="card"><table class="tbl"><thead><tr><th>User</th><th>Comment</th><th>Article</th><th>Action</th></tr></thead><tbody><tr><td>राज कुमार</td><td>बहुत अच्छी खबर...</td><td>चुनाव परिणाम</td><td><button class="btn btn-green" style="font-size:10px;padding:3px 8px">Approve</button></td></tr></tbody></table></div>
         </div>
 
         <div id="page-breaking" class="page" style="display:none">
@@ -519,7 +519,7 @@ export const classicAdminMarkup = `<div class="shell">
 
         <div id="page-reporters" class="page" style="display:none">
           <div class="page-header"><div><div class="pt">👥 Reporters & Team</div></div><button class="btn btn-red">+ Add Reporter</button></div>
-          <div class="card"><div class="ct">Team Members</div><table class="tbl"><tr><th>Name</th><th>Role</th><th>Status</th></tr><tr><td>AI News Desk</td><td>AI Writer</td><td><span class="badge b-green">Active</span></td></tr><tr><td>Pratap Kumar</td><td>Editor</td><td><span class="badge b-green">Active</span></td></tr></table></div>
+          <div class="card"><div class="ct">Team Members</div><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Status</th></tr></thead><tbody><tr><td>AI News Desk</td><td>AI Writer</td><td><span class="badge b-green">Active</span></td></tr><tr><td>Pratap Kumar</td><td>Editor</td><td><span class="badge b-green">Active</span></td></tr></tbody></table></div>
         </div>
 
         <div id="page-settings" class="page" style="display:none">
