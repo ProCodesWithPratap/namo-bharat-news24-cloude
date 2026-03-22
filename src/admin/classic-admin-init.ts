@@ -245,7 +245,7 @@ export function initClassicAdminPanel() {
         '<td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" onclick="editArticle(\'' + escapeJs(item.id) + '\')">Edit</button><button class="btn btn-green" onclick="toggleArticleStatus(\'' + escapeJs(item.id) + '\',\'' + nextStatus + '\')">' + toggleText + '</button><button class="btn" onclick="deleteArticle(\'' + escapeJs(item.id) + '\')">Delete</button></div></td>' +
         '</tr>';
     }).join('');
-    table.innerHTML = '<thead><tr><th>Title</th><th>Category</th><th>Updated</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + (rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:20px">No articles found</td></tr>') + '</tbody>';
+    table.innerHTML = '<tr><th>Title</th><th>Category</th><th>Updated</th><th>Status</th><th>Actions</th></tr>' + (rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:20px">No articles found</td></tr>');
   }
 
   function renderDashboard() {
@@ -256,14 +256,14 @@ export function initClassicAdminPanel() {
     const table = document.getElementById('dashboard-recent-table');
     if (table) {
       const rows = currentArticles.slice(0, 6).map((item) => '<tr><td style="white-space:normal">' + escapeHtml(item.headlineHindi || item.headline || 'Untitled') + '</td><td>' + escapeHtml(item.category?.nameHindi || item.category?.name || '—') + '</td><td>' + escapeHtml(item.status || 'draft') + '</td><td>' + escapeHtml(formatDateDisplay(item.updatedAt || item.publishDate)) + '</td></tr>').join('');
-      table.innerHTML = '<thead><tr><th>Headline</th><th>Category</th><th>Status</th><th>Updated</th></tr></thead><tbody>' + (rows || '<tr><td colspan="4">No article data available</td></tr>') + '</tbody>';
+      table.innerHTML = '<tr><th>Headline</th><th>Category</th><th>Status</th><th>Updated</th></tr>' + (rows || '<tr><td colspan="4">No article data available</td></tr>');
     }
   }
 
   function renderCategories() {
     const table = document.getElementById('category-list-table');
     if (!table) return;
-    table.innerHTML = '<thead><tr><th>Name</th><th>Slug</th><th>Nav</th></tr></thead><tbody>' + (currentCategories.map((item) => '<tr><td>' + escapeHtml(item.nameHindi || item.name) + '</td><td>' + escapeHtml(item.slug) + '</td><td>' + (item.showInNav ? 'Yes' : 'No') + '</td></tr>').join('') || '<tr><td colspan="3">No categories found</td></tr>') + '</tbody>';
+    table.innerHTML = '<tr><th>Name</th><th>Slug</th><th>Nav</th></tr>' + (currentCategories.map((item) => '<tr><td>' + escapeHtml(item.nameHindi || item.name) + '</td><td>' + escapeHtml(item.slug) + '</td><td>' + (item.showInNav ? 'Yes' : 'No') + '</td></tr>').join('') || '<tr><td colspan="3">No categories found</td></tr>');
   }
 
   async function loadReferenceData() {

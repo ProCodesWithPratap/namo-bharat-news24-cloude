@@ -347,12 +347,12 @@ export const classicAdminMarkup = `<div class="shell">
             <div class="sc"><div class="sl">Draft</div><div class="sv" id="dashboard-draft-articles">—</div><div style="font-size:11px;color:var(--orange)">Pending editorial review</div></div>
             <div class="sc"><div class="sl">Categories</div><div class="sv" id="dashboard-categories-count">—</div><div style="font-size:11px;color:var(--text-secondary)">Available desks</div></div>
           </div>
-          <div class="card"><div class="ct">Latest editorial activity</div><table class="tbl" id="dashboard-recent-table"><thead><tr><th>Headline</th><th>Category</th><th>Status</th><th>Updated</th></tr></thead><tbody><tr><td colspan="4">Loading…</td></tr></tbody></table></div>
+          <div class="card"><div class="ct">Latest editorial activity</div><table class="tbl" id="dashboard-recent-table"><tr><th>Headline</th><th>Category</th><th>Status</th><th>Updated</th></tr><tr><td colspan="4">Loading…</td></tr></table></div>
         </div>
 
         <div id="page-articles" class="page" style="display:none">
           <div class="page-header"><div><div class="pt">📰 Articles</div></div><button class="btn btn-red">+ New Article</button></div>
-          <div class="card"><div class="ct">All Articles</div><table class="tbl"><thead><tr><th>Title</th><th>Category</th><th>Updated</th><th>Status</th><th>Actions</th></tr></thead><tbody><tr><td colspan="5">Loading…</td></tr></tbody></table></div>
+          <div class="card"><div class="ct">All Articles</div><table class="tbl"><tr><th>Title</th><th>Category</th><th>Updated</th><th>Status</th><th>Actions</th></tr><tr><td colspan="5">Loading…</td></tr></table></div>
         </div>
 
         <div id="page-write" class="page" style="display:none">
@@ -391,7 +391,7 @@ export const classicAdminMarkup = `<div class="shell">
               <div class="form-group"><label>Slug *</label><input id="category-slug" type="text" placeholder="national"></div>
               <button class="btn btn-red" id="create-category-btn" type="button">Create Category</button>
             </div>
-            <div class="card"><div class="ct">All Categories</div><table class="tbl" id="category-list-table"><thead><tr><th>Name</th><th>Slug</th><th>Nav</th></tr></thead><tbody><tr><td colspan="3">Loading…</td></tr></tbody></table></div>
+            <div class="card"><div class="ct">All Categories</div><table class="tbl" id="category-list-table"><tr><th>Name</th><th>Slug</th><th>Nav</th></tr><tr><td colspan="3">Loading…</td></tr></table></div>
           </div>
         </div>
 
