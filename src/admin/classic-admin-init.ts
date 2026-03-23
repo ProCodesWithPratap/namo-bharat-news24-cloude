@@ -13,6 +13,7 @@ export function initClassicAdminPanel() {
   let currentArticles = [];
   let currentCategories = [];
   let currentMedia = [];
+  let authToken = null;
   let editingArticleId = null;
   let selectedHeroMedia = null;
   let articleSlugTouched = false;
@@ -29,6 +30,7 @@ export function initClassicAdminPanel() {
   async function apiFetch(path, options = {}) {
     const headers = new Headers(options.headers || {});
     if (!(options.body instanceof FormData) && options.body != null && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    if (authToken && !headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + authToken);
     const res = await fetch(path, { ...options, headers, credentials: 'include' });
     const text = await res.text();
     let data = null;
@@ -46,6 +48,7 @@ export function initClassicAdminPanel() {
 
   async function ensureAuth() {
     const data = await apiFetch(API.me, { method: 'GET' });
+    authToken = data?.token || authToken;
     if (!data?.user) {
       redirectToLogin();
       throw new Error('Authentication required');
@@ -286,10 +289,13 @@ export function initClassicAdminPanel() {
   }
 
   async function uploadHeroImage(file) {
+    if (!authToken) await ensureAuth();
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('alt', getArticleForm().headlineHindi.value || file.name);
-    const created = await apiFetch(API.media, { method: 'POST', body: formData, headers: {} });
+    formData.append('file', file, file.name);
+    formData.append('_payload', JSON.stringify({
+      alt: (getArticleForm().headlineHindi.value || file.name).trim() || file.name
+    }));
+    const created = await apiFetch(API.media, { method: 'POST', body: formData });
     return created?.doc || created;
   }
 
