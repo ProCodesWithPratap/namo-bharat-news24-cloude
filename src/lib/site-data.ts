@@ -4,6 +4,7 @@ import { getPayload } from "payload";
 import {
   CONTACT_ADDRESS,
   CONTACT_PHONE,
+  CONTACT_SUPPORT_MESSAGE,
   footerQuickLinks,
   PUBLIC_SOCIAL_LINKS,
   topUtilityLinks,
@@ -58,6 +59,11 @@ async function getPayloadSafe() {
   }
 }
 
+function cleanEmail(value?: string): string {
+  const trimmed = value?.trim() || "";
+  return trimmed.includes("@") ? trimmed : "";
+}
+
 export async function getSiteSettingsData() {
   const payload = await getPayloadSafe();
   let doc: SiteSettingsDoc | null = null;
@@ -78,9 +84,12 @@ export async function getSiteSettingsData() {
     x: cleanUrl(doc?.social?.x),
   };
 
+  const contactEmail = cleanEmail(doc?.contactEmail) || cleanEmail(process.env.NEXT_PUBLIC_CONTACT_EMAIL) || "";
+  const editorialEmail = cleanEmail(doc?.editorialEmail) || cleanEmail(process.env.NEXT_PUBLIC_EDITORIAL_EMAIL) || "";
+
   const newsroomMeta = {
-    contactEmail: doc?.contactEmail?.trim() || process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "",
-    editorialEmail: doc?.editorialEmail?.trim() || process.env.NEXT_PUBLIC_EDITORIAL_EMAIL?.trim() || "",
+    contactEmail,
+    editorialEmail,
     phone: doc?.phone?.trim() || CONTACT_PHONE,
     address: doc?.address?.trim() || CONTACT_ADDRESS,
     about: `${doc?.siteName?.trim() || SITE_NAME} — ${doc?.tagline?.trim() || SITE_DESCRIPTION}`,
@@ -90,6 +99,9 @@ export async function getSiteSettingsData() {
     siteUrl: SITE_URL,
     siteName: doc?.siteName?.trim() || SITE_NAME,
     tagline: doc?.tagline?.trim() || "तथ्य स्पष्ट, विचार निष्पक्ष।",
+    contactSupportMessage: CONTACT_SUPPORT_MESSAGE,
+    hasDirectContactEmail: Boolean(contactEmail),
+    hasEditorialEmail: Boolean(editorialEmail),
   };
 
   const footerSocialItems = [

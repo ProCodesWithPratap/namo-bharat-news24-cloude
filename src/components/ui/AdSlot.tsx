@@ -7,6 +7,8 @@ interface AdSlotProps {
   adHtml?: string;
 }
 
+const showAdPlaceholder = process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_SHOW_AD_PLACEHOLDERS === "true";
+
 export default function AdSlot({
   label = "Advertisement",
   width = 728,
@@ -21,6 +23,10 @@ export default function AdSlot({
         dangerouslySetInnerHTML={{ __html: adHtml }}
       />
     );
+  }
+
+  if (!showAdPlaceholder) {
+    return null;
   }
 
   return (
