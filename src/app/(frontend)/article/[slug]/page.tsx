@@ -8,8 +8,7 @@ import AdSlot from "@/components/ui/AdSlot";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
 import ArticleAnalytics from "@/components/common/ArticleAnalytics";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 30;
+export const revalidate = 60;
 
 type Props = { params: Promise<{ slug: string }> };
 
