@@ -4,7 +4,6 @@ import StaticPageLayout from "@/components/common/StaticPageLayout";
 export const metadata: Metadata = {
   title: "गोपनीयता नीति | नमो: भारत न्यूज़ 24",
   description: "नमो: भारत न्यूज़ 24 की गोपनीयता नीति — हम आपका डेटा सुरक्षित रखते हैं। कुकीज़, एनालिटिक्स और उपयोगकर्ता जानकारी के बारे में पूरी पारदर्शिता।",
-  alternates: { canonical: "https://namo-bharat-news24-cloude.vercel.app/privacy" },
 };
 
 export default function PrivacyPage() {
