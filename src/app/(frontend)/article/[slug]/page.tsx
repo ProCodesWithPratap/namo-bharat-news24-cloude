@@ -41,8 +41,13 @@ export default async function ArticlePage({ params }: Props) {
   const article = await getArticleBySlug(slug);
   if (!article || article.status !== "published") notFound();
 
-  const catSlug = article.category?.slug || "national";
-  const related = await getRelatedArticles(article.id, catSlug, 4).catch(() => ({ docs: [] }));
+  const catSlug = typeof article.category?.slug === "string" && article.category.slug.trim()
+    ? article.category.slug.trim()
+    : "national";
+  const articleId = typeof article.id === "string" ? article.id : String(article.id ?? "");
+  const related = articleId
+    ? await getRelatedArticles(articleId, catSlug, 4).catch(() => ({ docs: [] }))
+    : { docs: [] };
   const imgUrl = getImageUrl(article.heroMedia, "hero");
   const authorList: any[] = Array.isArray(article.author) ? article.author : [];
   const tagList: any[] = Array.isArray(article.tags) ? article.tags : [];
