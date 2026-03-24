@@ -9,11 +9,17 @@ export function initClassicAdminPanel() {
     siteSettings: '/api/globals/site-settings'
   };
 
+  const CATEGORY_WRITE_ROLES = new Set(['section-editor', 'managing-editor', 'editor-in-chief', 'super-admin']);
+  const MEDIA_UPLOAD_ROLES = new Set(['section-editor', 'managing-editor', 'editor-in-chief', 'super-admin', 'photo-editor', 'video-editor']);
+  const PREVIEW_ONLY_PAGES = new Set(['ai-writer', 'comments', 'breaking', 'live-blog', 'newsletter', 'polls', 'integrations', 'push', 'whatsapp', 'youtube', 'weather', 'analytics', 'seo', 'ads', 'reporters', 'settings']);
+
   let currentConfig = null;
   let currentArticles = [];
   let currentCategories = [];
   let currentMedia = [];
   let authToken = null;
+  let currentUser = null;
+  let currentRole = 'reporter';
   let editingArticleId = null;
   let selectedHeroMedia = null;
   let articleSlugTouched = false;
@@ -46,6 +52,30 @@ export function initClassicAdminPanel() {
     window.location.href = '/payload-admin/login?redirect=/admin';
   }
 
+  function roleLabel(role) {
+    const labels = {
+      'super-admin': 'Super Admin',
+      'editor-in-chief': 'Editor-in-Chief',
+      'managing-editor': 'Managing Editor',
+      'section-editor': 'Section Editor',
+      'sub-editor': 'Sub-Editor',
+      reporter: 'Reporter',
+      'photo-editor': 'Photo Editor',
+      'video-editor': 'Video Editor',
+      'seo-editor': 'SEO Editor',
+      'ad-manager': 'Ad Manager',
+    };
+    return labels[role] || 'Team Member';
+  }
+
+  function canManageCategories() {
+    return CATEGORY_WRITE_ROLES.has(currentRole);
+  }
+
+  function canUploadMedia() {
+    return MEDIA_UPLOAD_ROLES.has(currentRole);
+  }
+
   async function ensureAuth() {
     const data = await apiFetch(API.me, { method: 'GET' });
     authToken = data?.token || authToken;
@@ -53,6 +83,8 @@ export function initClassicAdminPanel() {
       redirectToLogin();
       throw new Error('Authentication required');
     }
+    currentUser = data.user;
+    currentRole = data.user?.role || 'reporter';
     return data.user;
   }
 
@@ -60,6 +92,110 @@ export function initClassicAdminPanel() {
   function hideAllPages() { document.querySelectorAll('.page').forEach((p) => p.style.display = 'none'); }
   function clearSidebarActiveState() { document.querySelectorAll('.sidebar-body .edit-item').forEach((e) => e.classList.remove('active')); }
   function closeMobileSidebar() { document.querySelector('.shell')?.classList.remove('sidebar-open'); }
+
+  function markItemDisabled(element, reason) {
+    if (!element || element.dataset.disabledByRole === '1') return;
+    element.dataset.disabledByRole = '1';
+    element.style.opacity = '0.55';
+    element.style.pointerEvents = 'none';
+    element.style.cursor = 'not-allowed';
+    const sub = element.querySelector('.edit-sub');
+    if (sub && !sub.dataset.originalText) {
+      sub.dataset.originalText = sub.textContent || '';
+      sub.textContent = reason;
+    }
+    element.title = reason;
+  }
+
+  function markButtonDisabled(element, reason) {
+    if (!element || element.dataset.disabledByRole === '1') return;
+    element.dataset.disabledByRole = '1';
+    element.disabled = true;
+    element.style.opacity = '0.55';
+    element.style.cursor = 'not-allowed';
+    element.title = reason;
+  }
+
+  function disableSidebarItemByAction(fragment, reason) {
+    document.querySelectorAll(`.edit-item[onclick*="${fragment}"]`).forEach((element) => markItemDisabled(element, reason));
+  }
+
+  function applyAdminHonestyLabels() {
+    const suiteBadge = document.querySelector('.topbar .logo .badge');
+    if (suiteBadge) suiteBadge.textContent = 'CUSTOM ADMIN';
+
+    const statusNode = document.querySelector('.topbar > div[style*="align-items:center"]');
+    if (statusNode) {
+      statusNode.innerHTML = `<div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div>Core CMS live • ${roleLabel(currentRole)} • Some sections preview-only`;
+    }
+
+    const resetButton = document.querySelector('.topbar-right button[onclick*="resetAll"]');
+    if (resetButton) resetButton.textContent = '↺ Clear Editor';
+
+    const publishButton = document.querySelector('.topbar-right button[onclick*="publishChanges"]');
+    if (publishButton) publishButton.textContent = '↻ Refresh Data';
+
+    const aiSidebarLabel = document.querySelector('.edit-item[onclick*="ai-writer"] .edit-sub');
+    if (aiSidebarLabel) aiSidebarLabel.textContent = 'Preview-only tools';
+
+    const aiPageTitle = document.querySelector('#page-ai-writer .pt');
+    if (aiPageTitle) aiPageTitle.textContent = '🤖 AI Writer Preview';
+
+    const aiPageSub = document.querySelector('#page-ai-writer .ps');
+    if (aiPageSub) aiPageSub.textContent = 'Preview-only section';
+
+    const aiHeader = document.querySelector('#page-ai-writer .ai-hdr span');
+    if (aiHeader) aiHeader.textContent = 'AI Writer Preview';
+
+    const integrationsCards = document.querySelectorAll('#page-integrations .card');
+    integrationsCards.forEach((card) => {
+      const titleNode = card.querySelector('div[style*="font-weight:600"]');
+      if (titleNode && titleNode.textContent?.trim() === 'Claude AI') {
+        titleNode.textContent = 'AI Provider';
+      }
+      const button = card.querySelector('button');
+      if (button && button.textContent?.includes('Connected')) {
+        button.textContent = 'Preview';
+        button.classList.remove('btn-green');
+        button.classList.add('btn');
+      }
+    });
+  }
+
+  function applyRolePermissions() {
+    applyAdminHonestyLabels();
+
+    if (!canManageCategories()) {
+      disableSidebarItemByAction("showPage('categories'", 'Requires editor role');
+      markButtonDisabled(document.getElementById('create-category-btn'), 'Requires editor role');
+      const categoryForm = getCategoryForm();
+      [categoryForm.nameHindi, categoryForm.nameEnglish, categoryForm.slug].forEach((field) => {
+        if (field) {
+          field.disabled = true;
+          field.placeholder = 'Requires editor role';
+        }
+      });
+    }
+
+    if (!canUploadMedia()) {
+      disableSidebarItemByAction("showPage('media'", 'Requires media/editor role');
+      const heroZone = document.getElementById('hero-upload-zone');
+      const heroInput = document.getElementById('hero-upload-input');
+      const heroMeta = document.getElementById('hero-upload-meta');
+      if (heroZone) {
+        heroZone.style.opacity = '0.55';
+        heroZone.style.cursor = 'not-allowed';
+        heroZone.title = 'Requires media/editor role';
+        heroZone.textContent = 'Media upload requires editor or media role';
+      }
+      if (heroInput) heroInput.disabled = true;
+      if (heroMeta) heroMeta.textContent = 'Media upload unavailable for your role';
+    }
+
+    PREVIEW_ONLY_PAGES.forEach((page) => {
+      disableSidebarItemByAction(`showPage('${page}'`, 'Preview-only section');
+    });
+  }
 
   function showPanel(name, el) {
     hideAllPages(); hideAllPanels();
@@ -72,6 +208,22 @@ export function initClassicAdminPanel() {
   window.showPanel = showPanel;
 
   function showPage(name, el) {
+    if (PREVIEW_ONLY_PAGES.has(name)) {
+      toast('This section is preview-only right now', true);
+      closeMobileSidebar();
+      return;
+    }
+    if (name === 'categories' && !canManageCategories()) {
+      toast('Category management requires editor role', true);
+      closeMobileSidebar();
+      return;
+    }
+    if (name === 'media' && !canUploadMedia()) {
+      toast('Media library requires editor or media role', true);
+      closeMobileSidebar();
+      return;
+    }
+
     hideAllPanels(); hideAllPages();
     const target = document.getElementById('page-' + name);
     if (target) target.style.display = 'block';
@@ -218,7 +370,7 @@ export function initClassicAdminPanel() {
     setToggle(form.featured, false);
     setToggle(form.breakingNews, false);
     if (form.heroInput) form.heroInput.value = '';
-    if (form.heroMeta) form.heroMeta.textContent = 'No image selected';
+    if (form.heroMeta) form.heroMeta.textContent = canUploadMedia() ? 'No image selected' : 'Media upload unavailable for your role';
     syncArticlePreview();
   }
 
@@ -311,12 +463,17 @@ export function initClassicAdminPanel() {
     await ensureAuth();
     await loadReferenceData();
     await loadArticles();
-    await renderMediaLibrary();
+    if (canUploadMedia()) {
+      await renderMediaLibrary();
+    }
     renderCategories();
     if (showToast) toast('Admin data refreshed');
   }
 
   async function uploadHeroImage(file) {
+    if (!canUploadMedia()) {
+      throw new Error('Media upload requires editor or media role');
+    }
     if (!authToken) await ensureAuth();
     const formData = new FormData();
     formData.append('file', file, file.name);
@@ -371,7 +528,7 @@ export function initClassicAdminPanel() {
     setToggle(form.featured, !!item.featured);
     setToggle(form.breakingNews, !!item.breakingNews);
     selectedHeroMedia = typeof item.heroMedia === 'object' ? item.heroMedia : null;
-    form.heroMeta.textContent = selectedHeroMedia?.url ? selectedHeroMedia.url : 'Existing hero image linked';
+    form.heroMeta.textContent = selectedHeroMedia?.url ? selectedHeroMedia.url : (canUploadMedia() ? 'Existing hero image linked' : 'Media upload unavailable for your role');
     syncArticlePreview();
     showPage('write', document.querySelector('.edit-item[onclick*="write"]'));
   }
@@ -395,6 +552,9 @@ export function initClassicAdminPanel() {
   window.deleteArticle = deleteArticle;
 
   async function createCategory() {
+    if (!canManageCategories()) {
+      return toast('Category management requires editor role', true);
+    }
     const form = getCategoryForm();
     const payload = { nameHindi: form.nameHindi.value.trim(), name: form.nameEnglish.value.trim(), slug: form.slug.value.trim(), showInNav: true };
     if (!payload.nameHindi || !payload.name || !payload.slug) return toast('Category name and slug are required', true);
@@ -412,7 +572,14 @@ export function initClassicAdminPanel() {
     const card = page.querySelector('.card');
     const list = document.createElement('div'); list.id = 'media-list'; list.style.marginTop = '16px'; card.appendChild(list);
     const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.style.display = 'none'; page.appendChild(input);
-    page.querySelector('.upload-zone')?.addEventListener('click', () => input.click());
+    const uploadZone = page.querySelector('.upload-zone');
+    if (canUploadMedia()) {
+      uploadZone?.addEventListener('click', () => input.click());
+    } else if (uploadZone) {
+      uploadZone.style.opacity = '0.55';
+      uploadZone.style.cursor = 'not-allowed';
+      uploadZone.textContent = 'Media library requires editor or media role';
+    }
     input.addEventListener('change', async () => {
       const file = input.files?.[0]; if (!file) return;
       try { await ensureAuth(); await uploadHeroImage(file); toast('Media uploaded'); input.value = ''; await renderMediaLibrary(); }
@@ -424,6 +591,10 @@ export function initClassicAdminPanel() {
     setupMediaUI();
     const list = document.getElementById('media-list');
     if (!list) return;
+    if (!canUploadMedia()) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--text-secondary)">Media library is available for editor and media roles.</div>';
+      return;
+    }
     list.innerHTML = '<div style="font-size:12px;color:var(--text-secondary)">Loading media…</div>';
     const data = await apiFetch(API.media + '?limit=24&sort=-updatedAt&depth=0');
     currentMedia = data.docs || [];
@@ -435,6 +606,8 @@ export function initClassicAdminPanel() {
 
   async function logout() {
     authToken = null;
+    currentUser = null;
+    currentRole = 'reporter';
     try { await fetch(API.logout, { method: 'POST', credentials: 'include' }); } catch (_e) {}
     redirectToLogin();
   }
@@ -447,7 +620,10 @@ export function initClassicAdminPanel() {
     document.getElementById('save-draft-btn')?.addEventListener('click', () => saveArticle('draft'));
     document.getElementById('create-category-btn')?.addEventListener('click', createCategory);
     const heroInput = document.getElementById('hero-upload-input');
-    document.getElementById('hero-upload-zone')?.addEventListener('click', () => heroInput?.click());
+    const heroZone = document.getElementById('hero-upload-zone');
+    if (canUploadMedia()) {
+      heroZone?.addEventListener('click', () => heroInput?.click());
+    }
     heroInput?.addEventListener('change', async () => {
       const file = heroInput.files?.[0]; if (!file) return;
       try {
@@ -468,7 +644,9 @@ export function initClassicAdminPanel() {
       articleCount: currentArticles.length,
       categoryCount: currentCategories.length,
       publishedCount: currentArticles.filter((item) => item.status === 'published').length,
-      draftCount: currentArticles.filter((item) => item.status !== 'published').length
+      draftCount: currentArticles.filter((item) => item.status !== 'published').length,
+      currentRole,
+      currentUser: currentUser?.name || currentUser?.email || 'Unknown'
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'namo-bharat-admin-summary.json'; a.click(); URL.revokeObjectURL(url); toast('Summary exported');
@@ -480,10 +658,12 @@ export function initClassicAdminPanel() {
   async function init() {
     enableToggleClicks();
     bindLiveInputs();
-    wireButtons();
     showPanel('logo', document.querySelector('.edit-item.active'));
     syncArticlePreview();
     try {
+      await ensureAuth();
+      applyRolePermissions();
+      wireButtons();
       await refreshAdminData(false);
     } catch (error) {
       toast(error.message || 'Admin bootstrap failed', true);
