@@ -71,6 +71,30 @@ function setNestedValue(target: Record<string, any>, path: string[], operator: s
   });
 }
 
+function buildPublicArticleWhere(extra?: Record<string, any>) {
+  const now = new Date().toISOString();
+  const clauses: Record<string, any>[] = [
+    {
+      or: [
+        { status: { equals: "published" } },
+        { _status: { equals: "published" } },
+      ],
+    },
+    {
+      or: [
+        { publishDate: { exists: false } },
+        { publishDate: { less_than_equal: now } },
+      ],
+    },
+  ];
+
+  if (extra && Object.keys(extra).length > 0) {
+    clauses.push(extra);
+  }
+
+  return { and: clauses };
+}
+
 async function fetchPayloadServer<T>(path: string): Promise<T> {
   const [pathname, rawQuery = ""] = path.split("?");
   const collection = pathname.replace(/^\//, "") as PayloadCollection;
@@ -198,22 +222,21 @@ export async function getArticles(options: {
 
   try {
     const payload = await getPayload({ config: configPromise });
-    const where: Record<string, any> = {};
+    const extraWhere: Record<string, any> = {};
 
-    if (category) where["category.slug"] = { equals: category };
-    if (tag) where["tags.slug"] = { equals: tag };
-    if (featured) where.featured = { equals: true };
-    if (breakingNews) where.breakingNews = { equals: true };
-    if (language) where.language = { equals: language };
+    if (category) extraWhere["category.slug"] = { equals: category };
+    if (tag) extraWhere["tags.slug"] = { equals: tag };
+    if (featured) extraWhere.featured = { equals: true };
+    if (breakingNews) extraWhere.breakingNews = { equals: true };
+    if (language) extraWhere.language = { equals: language };
 
     const result = await payload.find({
       collection: "articles",
-      where: Object.keys(where).length > 0 ? where : undefined,
+      where: buildPublicArticleWhere(extraWhere),
       limit,
       page,
       depth: 2,
       sort,
-      overrideAccess: true,
     });
 
     return result as unknown as PaginatedArticles;
@@ -224,11 +247,24 @@ export async function getArticles(options: {
 }
 
 export async function getArticleBySlug(slug: string) {
-  const q = buildQuery({ "slug[equals]": slug, depth: 3, limit: 1 });
-  const data = await fetchPayload<{ docs: any[] }>(`/articles${q}`, {
-    next: { revalidate: 30 },
-  });
-  return data.docs[0] || null;
+  if (typeof window !== "undefined") return null;
+
+  try {
+    const payload = await getPayload({ config: configPromise });
+    const result = await payload.find({
+      collection: "articles",
+      where: buildPublicArticleWhere({
+        slug: { equals: slug },
+      }),
+      limit: 1,
+      depth: 3,
+    });
+
+    return result.docs[0] || null;
+  } catch (e) {
+    console.error("[getArticleBySlug] error:", e);
+    return null;
+  }
 }
 
 export async function getBreakingNews(limit = 5) {
@@ -244,12 +280,11 @@ export async function getFeaturedArticles(limit = 6): Promise<PaginatedArticles>
     const payload = await getPayload({ config: configPromise });
     const result = await payload.find({
       collection: "articles",
-      where: { featured: { equals: true } },
+      where: buildPublicArticleWhere({ featured: { equals: true } }),
       limit,
       page: 1,
       depth: 2,
       sort: "-publishDate",
-      overrideAccess: true,
     });
 
     return result as unknown as PaginatedArticles;
@@ -268,11 +303,11 @@ export async function getLatestArticles(limit = 20): Promise<PaginatedArticles> 
     const payload = await getPayload({ config: configPromise });
     const result = await payload.find({
       collection: "articles",
+      where: buildPublicArticleWhere(),
       limit,
       page: 1,
       depth: 2,
       sort: "-publishDate",
-      overrideAccess: true,
     });
 
     return result as unknown as PaginatedArticles;
@@ -295,12 +330,11 @@ export async function getCategoryArticles(
     const payload = await getPayload({ config: configPromise });
     const result = await payload.find({
       collection: "articles",
-      where: { "category.slug": { equals: categorySlug } },
+      where: buildPublicArticleWhere({ "category.slug": { equals: categorySlug } }),
       limit,
       page,
       depth: 2,
       sort: "-publishDate",
-      overrideAccess: true,
     });
 
     return result as unknown as PaginatedArticles;
@@ -319,15 +353,14 @@ export async function getRelatedArticles(articleId: string, categorySlug: string
     const payload = await getPayload({ config: configPromise });
     const result = await payload.find({
       collection: "articles",
-      where: {
+      where: buildPublicArticleWhere({
         "category.slug": { equals: categorySlug },
         id: { not_equals: articleId },
-      },
+      }),
       limit,
       page: 1,
       depth: 2,
       sort: "-publishDate",
-      overrideAccess: true,
     });
 
     return result as unknown as PaginatedArticles;
@@ -394,18 +427,32 @@ export async function getTagBySlug(slug: string) {
 // ── Search ────────────────────────────────────────────────────────────────
 
 export async function searchArticles(query: string, limit = 10, page = 1) {
-  const q = buildQuery({
-    or: JSON.stringify([
-      { headline: { like: query } },
-      { headlineHindi: { like: query } },
-      { excerpt: { like: query } },
-    ]),
-    limit,
-    page,
-    sort: "-publishDate",
-    depth: 2,
-  });
-  return fetchPayload<{ docs: any[]; totalDocs: number }>(`/articles${q}`);
+  if (typeof window !== "undefined") {
+    return { docs: [], totalDocs: 0 };
+  }
+
+  try {
+    const payload = await getPayload({ config: configPromise });
+    const result = await payload.find({
+      collection: "articles",
+      where: buildPublicArticleWhere({
+        or: [
+          { headline: { like: query } },
+          { headlineHindi: { like: query } },
+          { excerpt: { like: query } },
+        ],
+      }),
+      limit,
+      page,
+      sort: "-publishDate",
+      depth: 2,
+    });
+
+    return result as unknown as { docs: any[]; totalDocs: number };
+  } catch (e) {
+    console.error("[searchArticles] error:", e);
+    return { docs: [], totalDocs: 0 };
+  }
 }
 
 // ── Authors ───────────────────────────────────────────────────────────────
