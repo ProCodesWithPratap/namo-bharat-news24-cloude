@@ -5,10 +5,40 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+function normalizeSiteUrl(value?: string): string {
+  const trimmed = value?.trim();
+  if (!trimmed) return "";
+
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+  try {
+    const parsed = new URL(withProtocol);
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return "";
+  }
+}
+
+export function resolveSiteUrl(): string {
+  const explicitUrl = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  if (explicitUrl) return explicitUrl;
+
+  const serverUrl = normalizeSiteUrl(process.env.NEXT_PUBLIC_SERVER_URL);
+  if (serverUrl) return serverUrl;
+
+  const vercelProductionUrl = normalizeSiteUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL);
+  if (vercelProductionUrl) return vercelProductionUrl;
+
+  const vercelPreviewUrl = normalizeSiteUrl(process.env.VERCEL_URL);
+  if (vercelPreviewUrl) return vercelPreviewUrl;
+
+  return "http://localhost:3000";
+}
+
 export const SITE_NAME = "नमो: भारत न्यूज़ 24";
 export const SITE_NAME_EN = "Namo Bharat News 24";
 export const SITE_TAGLINE = "तथ्य स्पष्ट, विचार निष्पक्ष।";
-export const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+export const SITE_URL = resolveSiteUrl();
 export const SITE_DESCRIPTION =
   "भारत और दुनिया की हर महत्वपूर्ण खबर अब पहुँचेगी आपके पास तेज़, सटीक और निष्पक्ष रूप में।";
 
