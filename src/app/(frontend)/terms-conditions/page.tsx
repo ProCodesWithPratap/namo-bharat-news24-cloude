@@ -4,7 +4,6 @@ import StaticPageLayout from "@/components/common/StaticPageLayout";
 export const metadata: Metadata = {
   title: "उपयोग की शर्तें | नमो: भारत न्यूज़ 24",
   description: "नमो: भारत न्यूज़ 24 के उपयोग की शर्तें — इस वेबसाइट पर प्रकाशित सामग्री के अधिकार, पुनर्प्रकाशन नीति और उपयोगकर्ता जिम्मेदारियों की जानकारी।",
-  alternates: { canonical: "https://namo-bharat-news24-cloude.vercel.app/terms" },
 };
 
 export default function TermsPage() {
