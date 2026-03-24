@@ -2,6 +2,7 @@ import { SITE_NAME, SITE_URL } from "@/lib/utils";
 
 export const CONTACT_PHONE = "+91-91628 68368";
 export const CONTACT_ADDRESS = "9th Floor, 9ES9, Mani Casadona, Action Area-1, New Town, East Tower, West Bengal";
+export const CONTACT_SUPPORT_MESSAGE = "फोन और WhatsApp से संपर्क उपलब्ध है";
 
 export const PUBLIC_SOCIAL_LINKS = {
   facebook: "https://www.facebook.com/share/1T4v14zFhK/",
