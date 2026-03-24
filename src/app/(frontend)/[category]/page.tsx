@@ -5,7 +5,6 @@ import NewsCard from "@/components/ui/NewsCard";
 import AdSlot from "@/components/ui/AdSlot";
 import { NAV_CATEGORIES, PUBLIC_CATEGORY_ROUTE_SLUGS, normalizeCategorySlug, SITE_NAME, SITE_URL } from "@/lib/utils";
 import { getNavigationCategoriesData } from "@/lib/site-data";
-export const dynamic = "force-dynamic";
 
 export const revalidate = 60;
 
