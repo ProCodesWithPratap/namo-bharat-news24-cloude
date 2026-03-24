@@ -1,12 +1,27 @@
 import { withPayload } from "@payloadcms/next/withPayload";
 
+const deploymentHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.VERCEL_URL?.trim() || "";
+const remoteImageHosts = Array.from(
+  new Set(
+    [
+      "localhost",
+      "blob.vercel-storage.com",
+      "public.blob.vercel-storage.com",
+      "i.ytimg.com",
+      "img.youtube.com",
+      "images.unsplash.com",
+      deploymentHost.replace(/^https?:\/\//, "").replace(/\/$/, ""),
+    ].filter(Boolean),
+  ),
+);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "**" },
-      { protocol: "http", hostname: "localhost" },
-    ],
+    remotePatterns: remoteImageHosts.map((hostname) => ({
+      protocol: hostname === "localhost" ? "http" : "https",
+      hostname,
+    })),
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 86400,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
