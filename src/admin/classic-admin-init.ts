@@ -98,7 +98,7 @@ export function initClassicAdminPanel() {
 
   function isToggleOn(el) { return !!el && el.classList.contains('on'); }
   function setToggle(el, on) { if (el) el.classList.toggle('on', !!on); }
-  function escapeHtml(text) { return String(text == null ? '' : text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function escapeHtml(text) { return String(text == null ? '' : text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'); }
   function escapeJs(text) { return String(text == null ? '' : text).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
   function slugify(value) { return String(value || '').toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9\u0900-\u097f-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '') || ('item-' + Date.now()); }
   function formatDateDisplay(value) { if (!value) return '—'; try { return new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return value; } }
@@ -222,6 +222,25 @@ export function initClassicAdminPanel() {
     syncArticlePreview();
   }
 
+  function clearEditor() {
+    resetArticleForm();
+    showPage('write', document.querySelector('.edit-item[onclick*="write"]'));
+    toast('Editor cleared');
+  }
+  window.clearEditor = clearEditor;
+
+  function addNavItem() {
+    const container = document.getElementById('nav-items');
+    if (!container) return;
+    const row = document.createElement('div');
+    row.className = 'nav-menu-item';
+    row.innerHTML = '<span class="drag-handle">⠿</span><input type="text" value="नया लिंक" style="flex:1;border:none;outline:none;background:transparent"><input type="text" value="/new-link" style="width:80px;font-size:11px"><div class="toggle on"></div>';
+    container.appendChild(row);
+    enableToggleClicks();
+    toast('Navigation item added to preview');
+  }
+  window.addNavItem = addNavItem;
+
   function mapArticleForTable(item) {
     return {
       id: item.id,
@@ -286,6 +305,15 @@ export function initClassicAdminPanel() {
     currentArticles = data.docs || [];
     renderArticlesList(currentArticles);
     renderDashboard();
+  }
+
+  async function refreshAdminData(showToast = true) {
+    await ensureAuth();
+    await loadReferenceData();
+    await loadArticles();
+    await renderMediaLibrary();
+    renderCategories();
+    if (showToast) toast('Admin data refreshed');
   }
 
   async function uploadHeroImage(file) {
@@ -406,6 +434,7 @@ export function initClassicAdminPanel() {
   }
 
   async function logout() {
+    authToken = null;
     try { await fetch(API.logout, { method: 'POST', credentials: 'include' }); } catch (_e) {}
     redirectToLogin();
   }
@@ -432,13 +461,21 @@ export function initClassicAdminPanel() {
   }
 
   async function exportConfig() {
-    const payload = { exportedAt: new Date().toISOString(), articleCount: currentArticles.length, categoryCount: currentCategories.length };
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      siteName: currentConfig?.site?.name || 'नमो: भारत न्यूज़ 24',
+      tagline: currentConfig?.site?.tagline || 'तथ्य स्पष्ट, विचार निष्पक्ष।',
+      articleCount: currentArticles.length,
+      categoryCount: currentCategories.length,
+      publishedCount: currentArticles.filter((item) => item.status === 'published').length,
+      draftCount: currentArticles.filter((item) => item.status !== 'published').length
+    };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'namo-bharat-admin-export.json'; a.click(); URL.revokeObjectURL(url); toast('Exported');
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'namo-bharat-admin-summary.json'; a.click(); URL.revokeObjectURL(url); toast('Summary exported');
   }
   window.exportConfig = exportConfig;
-  window.resetAll = logout;
-  window.publishChanges = async function publishChanges() { toast('Site settings preview is ready; content tools are live'); };
+  window.resetAll = clearEditor;
+  window.publishChanges = async function publishChanges() { await refreshAdminData(true); };
 
   async function init() {
     enableToggleClicks();
@@ -447,11 +484,7 @@ export function initClassicAdminPanel() {
     showPanel('logo', document.querySelector('.edit-item.active'));
     syncArticlePreview();
     try {
-      await ensureAuth();
-      await loadReferenceData();
-      await loadArticles();
-      await renderMediaLibrary();
-      renderCategories();
+      await refreshAdminData(false);
     } catch (error) {
       toast(error.message || 'Admin bootstrap failed', true);
     }
