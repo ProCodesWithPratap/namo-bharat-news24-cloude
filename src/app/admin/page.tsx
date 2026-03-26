@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import ClassicAdminClient from "@/components/admin/ClassicAdminClient";
+import ClassicAdminClientNoSSR from "@/components/admin/ClassicAdminClientNoSSR";
 import { requireAdminSession } from "@/lib/admin-auth";
 
 export default async function AdminPage() {
@@ -10,5 +10,5 @@ export default async function AdminPage() {
     redirect("/payload-admin/login?redirect=/admin");
   }
 
-  return <ClassicAdminClient />;
+  return <ClassicAdminClientNoSSR />;
 }
