@@ -9,37 +9,37 @@ export default function BrandLogo() {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 18,
-        width: "fit-content",
-        margin: "0 auto 18px",
-        padding: "14px 18px",
-        borderRadius: 24,
-        background: "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(255,245,246,0.98) 100%)",
-        border: "1px solid rgba(200, 16, 46, 0.14)",
-        boxShadow: "0 20px 48px rgba(200, 16, 46, 0.14)",
+        gap: 22,
+        width: "min(100%, 640px)",
+        margin: "0 auto 22px",
+        padding: "18px 22px",
+        borderRadius: 30,
+        background: "linear-gradient(135deg, rgba(255,255,255,0.99) 0%, rgba(255,245,246,0.98) 100%)",
+        border: "1px solid rgba(200, 16, 46, 0.16)",
+        boxShadow: "0 26px 70px rgba(17, 24, 39, 0.10), 0 14px 34px rgba(200, 16, 46, 0.10)",
       }}
     >
       <img
         src={ADMIN_LOGO}
         alt="नमो: भारत न्यूज़ 24"
         style={{
-          width: 82,
-          height: 82,
+          width: 106,
+          height: 106,
           borderRadius: "50%",
           objectFit: "cover",
-          border: "4px solid #ffffff",
-          boxShadow: "0 16px 32px rgba(200, 16, 46, 0.22)",
+          border: "5px solid #ffffff",
+          boxShadow: "0 20px 42px rgba(200, 16, 46, 0.24)",
           flexShrink: 0,
         }}
       />
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <strong style={{ color: "#111827", fontSize: 24, lineHeight: 1.05, fontWeight: 800 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <strong style={{ color: "#111827", fontSize: 31, lineHeight: 1.02, fontWeight: 900, letterSpacing: "-0.03em" }}>
           नमो: भारत न्यूज़ 24
         </strong>
-        <span style={{ color: "#C8102E", fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        <span style={{ color: "#C8102E", fontSize: 14, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>
           Payload Admin
         </span>
-        <span style={{ color: "#6b7280", fontSize: 14, fontWeight: 600 }}>
+        <span style={{ color: "#4b5563", fontSize: 16, fontWeight: 700 }}>
           तथ्य स्पष्ट, विचार निष्पक्ष।
         </span>
       </div>
