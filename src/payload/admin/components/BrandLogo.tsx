@@ -17,8 +17,39 @@ export default function BrandLogo() {
         background: "linear-gradient(135deg, rgba(255,255,255,0.99) 0%, rgba(255,245,246,0.98) 100%)",
         border: "1px solid rgba(200, 16, 46, 0.16)",
         boxShadow: "0 26px 70px rgba(17, 24, 39, 0.10), 0 14px 34px rgba(200, 16, 46, 0.10)",
+        animation: "nbnBrandFloat 5.6s ease-in-out infinite",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      <style>{`
+        @keyframes nbnBrandFloat {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-6px); }
+        }
+
+        @keyframes nbnLogoPulse {
+          0%, 100% { box-shadow: 0 20px 42px rgba(200, 16, 46, 0.24); }
+          50% { box-shadow: 0 24px 56px rgba(200, 16, 46, 0.34); }
+        }
+
+        @keyframes nbnBrandSweep {
+          0% { transform: translateX(-120%); opacity: 0; }
+          40% { opacity: 0.4; }
+          100% { transform: translateX(140%); opacity: 0; }
+        }
+      `}</style>
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.58) 48%, transparent 100%)",
+          transform: "translateX(-120%)",
+          animation: "nbnBrandSweep 5.2s ease-in-out infinite",
+          pointerEvents: "none",
+        }}
+      />
       <img
         src={ADMIN_LOGO}
         alt="नमो: भारत न्यूज़ 24"
@@ -29,10 +60,13 @@ export default function BrandLogo() {
           objectFit: "cover",
           border: "5px solid #ffffff",
           boxShadow: "0 20px 42px rgba(200, 16, 46, 0.24)",
+          animation: "nbnLogoPulse 4.2s ease-in-out infinite",
           flexShrink: 0,
+          position: "relative",
+          zIndex: 1,
         }}
       />
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, position: "relative", zIndex: 1 }}>
         <strong style={{ color: "#111827", fontSize: 31, lineHeight: 1.02, fontWeight: 900, letterSpacing: "-0.03em" }}>
           नमो: भारत न्यूज़ 24
         </strong>
